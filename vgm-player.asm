@@ -12,11 +12,20 @@
 OPM_BASE_ADDRESS  = $AFF000
 PSG_BASE_ADDRESS  = $AFF100
 OPN2_BASE_ADDRESS = $AFF200
-OPL3_BASE_ADRESS  = $FAE600
+OPL3_BASE_ADRESS  = $AFE600
 
-VGM_OFFSET        = $34
+; Important offsets
+VGM_VERSION       = $8  ; 32-bits
+SN_CLOCK          = $C  ; 32-bits
+LOOP_OFFSET       = $1C ; 32-bits
+YM_OFFSET         = $2C ; 32-bits
+OPM_CLOCK         = $30 ; 32-bits
+VGM_OFFSET        = $34 ; 32-bits
+
+; Registers
 CURRENT_POSITION  = $70 ; 2 bytes
 WAIT_CNTR         = $72 ; 2 bytes
+LOOP_OFFSET_REG   = $74 ; 2 bytes
 
 * = $160000
 
@@ -59,13 +68,7 @@ VGM_START
             STA @lINT_MASK_REG2
             STA @lINT_MASK_REG3
             
-            LDA #$15
-            STA @lOPM_BASE_ADDRESS + $14
-            LDA #$30
-            STA @lOPM_BASE_ADDRESS + $10
-            LDA #$0
-            STA @lOPM_BASE_ADDRESS + $11
-            ;JSR WRITE_REGISTER  ; the initial load of register should set the timerA
+            JSR WRITE_REGISTER  ; the initial load of register should set the timerA
             CLI
             ; loop, waiting for interrupts
         LOOP
@@ -97,6 +100,49 @@ WRITE_REGISTER
     CHECK_NEXT
             LDA VGM_FILE,Y
             INY
+            CMP #$50
+            BNE NOT_PSG
+            
+            LDA VGM_FILE,Y
+            STA PSG_BASE_ADDRESS
+            INY
+            JMP WR_DONE
+            
+    NOT_PSG
+            CMP #$52
+            BNE NOT_YM2612_P0
+            
+            ; the second byte is the register
+            LDA #0
+            XBA
+            LDA VGM_FILE,Y
+            TAX
+            INY
+            
+            ; the third byte is the value to write in the register
+            LDA VGM_FILE,Y
+            STA @lOPN2_BASE_ADDRESS,X
+            INY
+            BRA CHECK_NEXT
+            
+    NOT_YM2612_P0
+            CMP #$53
+            BNE NOT_YM2612_P1
+            
+            ; the second byte is the register
+            LDA #0
+            XBA
+            LDA VGM_FILE,Y
+            TAX
+            INY
+            
+            ; the third byte is the value to write in the register
+            LDA VGM_FILE,Y
+            STA @lOPN2_BASE_ADDRESS + $100,X
+            INY
+            BRA CHECK_NEXT
+            
+    NOT_YM2612_P1
             CMP #$54
             BNE NOT_YM2151
             
@@ -112,11 +158,42 @@ WRITE_REGISTER
             STA @lOPM_BASE_ADDRESS,X
             INY
             BRA CHECK_NEXT
-            ; wait until the register is no longer busy
-            ;JSR WAIT_68CYC
-            ;BRA LOAD_CMD
         
     NOT_YM2151
+            CMP #$5E
+            BNE NOT_YM262_P0
+            
+            ; the second byte is the register
+            LDA #0
+            XBA
+            LDA VGM_FILE,Y
+            TAX
+            INY
+            
+            ; the third byte is the value to write in the register
+            LDA VGM_FILE,Y
+            STA @lOPL3_BASE_ADRESS,X
+            INY
+            BRA WR_DONE
+            
+    NOT_YM262_P0
+            CMP #$5F
+            BNE NOT_YM262_P1
+            
+            ; the second byte is the register
+            LDA #0
+            XBA
+            LDA VGM_FILE,Y
+            TAX
+            INY
+            
+            ; the third byte is the value to write in the register
+            LDA VGM_FILE,Y
+            STA @lOPL3_BASE_ADRESS+ $100,X
+            INY
+            BRA WR_DONE
+            
+    NOT_YM262_P1
             CMP #$61
             BNE NOT_WAIT
             setal
@@ -151,7 +228,7 @@ WRITE_REGISTER
             
     NOT_WAIT_50TH
             CMP #$66 ; end of song
-            BNE SKIP_CMD
+            BNE NOT_SONG_END
             
             setal
             CLC
@@ -165,9 +242,19 @@ WRITE_REGISTER
             
             BRA WR_DONE 
             
+    NOT_SONG_END
+            BIT #$70
+            BEQ SKIP_CMD
+            
+            AND #$F
+            TAX
+            STX WAIT_CNTR
+            BRA WR_DONE
+            
     SKIP_CMD
-            INY
-            INY
+            JSL PRINTAH
+            ;INY
+            ;INY
     WR_DONE
             STY CURRENT_POSITION
             PLB
@@ -212,5 +299,15 @@ INIT_TIMER0
 VGM_FILE
 ;.binary "04 Kalinka.vgm"
 ;.binary "peddler.vgm"
-.binary "troika.vgm"
+;.binary "troika.vgm"
 ;.binary "test.vgm"
+
+; PSG FILES
+;.binary "03 Minigame Intro.vgm"
+;.binary "01 Ghostbusters Main Theme.vgm"
+
+; YM2612
+;.binary "09 Skyscrapers.vgm"
+
+; YM262
+.binary "02 At Doom's Gate-ym262.vgm"
