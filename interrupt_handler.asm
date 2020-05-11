@@ -31,7 +31,7 @@ IRQ_HANDLER
                 BEQ CHECK_PENDING_REG1
 
 ; Start of Frame (display), timer 0 (music), mouse (ignored)
-                ;check_irq_bit INT_PENDING_REG0, FNX0_INT00_SOF, SOF_INTERRUPT
+                check_irq_bit INT_PENDING_REG0, FNX0_INT00_SOF, SOF_INTERRUPT
                 check_irq_bit INT_PENDING_REG0, FNX0_INT02_TMR0, TIMER0_INTERRUPT
                 ;check_irq_bit INT_PENDING_REG0, FNX0_INT07_MOUSE, MOUSE_INTERRUPT
 
@@ -55,7 +55,7 @@ CHECK_PENDING_REG3
                 setas
                 LDA INT_PENDING_REG3
                 BEQ EXIT_IRQ_HANDLE
-                check_irq_bit INT_PENDING_REG3, FNX3_INT01_OPM, OPM_INTERRUPT
+                ;check_irq_bit INT_PENDING_REG3, FNX3_INT01_OPM, OPM_INTERRUPT
                 
 EXIT_IRQ_HANDLE
                 ; Exit Interrupt Handler
@@ -87,7 +87,6 @@ KEYBOARD_INTERRUPT
 
 OPM_INTERRUPT
                 .as
-                JSR WRITE_REGISTER
                 RTS
                 
 
@@ -99,18 +98,18 @@ OPM_INTERRUPT
 ; ****************************************************************
 SOF_INTERRUPT
                 .as
-                ;JSR WRITE_REGISTER
+                JSR VGM_WRITE_REGISTER
                 RTS
 
 
 ; ****************************************************************
 ; ****************************************************************
-; * Play notes
+; * Play VGM files
 ; ****************************************************************
 ; ****************************************************************
 TIMER0_INTERRUPT
                 .as
-                JSR WRITE_REGISTER
+                JSR VGM_WRITE_REGISTER
                 RTS
                 
 ; ****************************************************************

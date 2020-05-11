@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--Export of Watch List for C256 Foenix IDE-->
+<watches>
+	<watch address="000088" label="CURRENT_POSITION" />
+	<watch address="00008A" label="CURRENT_POSITION+2" />
+</watches>
