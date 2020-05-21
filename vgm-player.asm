@@ -6,7 +6,7 @@
 ; * for the C256 Foenix.
 ; * Copyright Daniel Tremblay 2020
 ; * This code is provided without warranty.
-; * Please attribute credits to Daniel Tremblay is you reuse.
+; * Please attribute credits to Daniel Tremblay if you reuse.
 ; ****************************************************************************
 ; *   To play VGM files in your games, include this file first.
 ; *   Next, in your interrupt handler, enable timer0.
