@@ -46,11 +46,12 @@ OPM_CLOCK         = $30 ; 32-bits
 VGM_OFFSET        = $34 ; 32-bits
 
 ; VGM Registers
-COMMAND           = $80 ; 1 byte
-SONG_START        = $84 ; 4 bytes
-CURRENT_POSITION  = $88 ; 4 bytes
-WAIT_CNTR         = $8C ; 2 bytes
-LOOP_OFFSET_REG   = $8E ; 2 bytes
+COMMAND           = $7F ; 1 byte
+SONG_START        = $80 ; 4 bytes
+CURRENT_POSITION  = $84 ; 4 bytes
+WAIT_CNTR         = $88 ; 2 bytes
+LOOP_OFFSET_REG   = $8A ; 2 bytes
+PCM_OFFSET        = $8C ; 4 bytes
 
 AY_3_8910_A       = $90 ; 2 bytes
 AY_3_8910_B       = $92 ; 2 bytes
@@ -62,7 +63,7 @@ DISPLAY_OFFSET    = $78 ; 2 bytes
 MSG_PTR           = $7A ; 3 bytes
 DATA_STREAM_CNT   = $7D ; 2 byte
 
-DATA_STREAM_TBL   = $8000
+DATA_STREAM_TBL   = $8000 ; each entry is 4 bytes
 
 * = $160000
 
@@ -113,7 +114,7 @@ VGM_START
             STA @lINT_EDGE_REG2
             STA @lINT_EDGE_REG3
 
-            LDA #~( FNX0_INT02_TMR0 | FNX0_INT00_SOF)
+            LDA #~( FNX0_INT02_TMR0 ) ;  | FNX0_INT00_SOF)
             STA @lINT_MASK_REG0
             LDA #$FF
             STA @lINT_MASK_REG1
@@ -216,7 +217,6 @@ DISPLAY_MSG
             TYX
             STA $AF0000,X
             
-            
             setal
             LDA DISPLAY_OFFSET
             CLC
@@ -277,7 +277,9 @@ VGM_WRITE_REGISTER
             LSR A
             LSR A
             TAX
-            JSR (VGM_COMMAND_TABLE,X)
+            JMP (VGM_COMMAND_TABLE,X)
+            
+    VGM_LOOP_DONE
             RTS
             
 ; *******************************************************************
@@ -294,16 +296,17 @@ VGM_COMMAND_TABLE
             .word <>WAIT_N_1        ;7
             .word <>YM2612_SAMPLE   ;8
             .word <>DAC_STREAM      ;9
-            .word <>AY8910          ;A - AY8910 - not implemented
+            .word <>AY8910          ;A - AY8910
             .word <>SKIP_TWO_BYTES  ;B - not implemented
             .word <>SKIP_THREE_BYTES;C - not implemented
             .word <>SKIP_THREE_BYTES;D - not implemented
-            .word <>SKIP_FOUR_BYTES ;E - not implemented
+            .word <>SEEK_OFFSET     ;E - not implemented
             .word <>SKIP_FOUR_BYTES ;F - not implemented
             
 INVALID_COMMAND
             .as
-            RTS
+            JMP VGM_WRITE_REGISTER
+
 SKIP_BYTE_CMD
             .as
             setal
@@ -312,7 +315,7 @@ SKIP_BYTE_CMD
             setas
             JSR DISPLAY_MSG
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
 
 SKIP_TWO_BYTES
             .as
@@ -331,7 +334,7 @@ SKIP_TWO_BYTES
             INC CURRENT_POSITION + 2
     s2_2
             setas
-            RTS
+            JMP VGM_WRITE_REGISTER
 
 SKIP_THREE_BYTES
             .as
@@ -354,8 +357,40 @@ SKIP_THREE_BYTES
             INC CURRENT_POSITION + 2
     s3_3
             setas
-            RTS
+            JMP VGM_WRITE_REGISTER
 
+SEEK_OFFSET
+            .as
+            LDA COMMAND
+            CMP #$E0
+            BNE SKIP_BYTE_CMD
+            
+            ; read 4 bytes, add them to the databank 0 offset
+            ; and store in the PCM_OFFSET
+            setal
+            LDA [CURRENT_POSITION]
+            STA ADDER_A
+            increment_long_addr CURRENT_POSITION
+            increment_long_addr CURRENT_POSITION
+            setal
+            LDA [CURRENT_POSITION]
+            STA ADDER_A + 2
+            increment_long_addr CURRENT_POSITION
+            increment_long_addr CURRENT_POSITION
+            setal
+            LDA DATA_STREAM_TBL
+            STA ADDER_B
+            LDA DATA_STREAM_TBL + 2
+            STA ADDER_B + 2
+            
+            LDA ADDER_R
+            STA PCM_OFFSET
+            LDA ADDER_R + 2
+            STA PCM_OFFSET + 2
+            setas
+            
+            JMP VGM_WRITE_REGISTER
+            
 SKIP_FOUR_BYTES
             .as
             setal
@@ -381,12 +416,19 @@ SKIP_FOUR_BYTES
             INC CURRENT_POSITION + 2
     s4_4
             setas
-            RTS
+            JMP VGM_WRITE_REGISTER
 
 ; we need to combine R1 and R0 together before we send
 ; the data to the SN76489
 AY8910 
             .as
+            LDA COMMAND
+            CMP #$A0
+            BEQ AY_COMMAND
+            
+            JMP SKIP_TWO_BYTES
+            
+    AY_COMMAND
             ; the second byte is the register
             LDA [CURRENT_POSITION]
             increment_long_addr CURRENT_POSITION
@@ -402,7 +444,7 @@ AY8910
             LDA #$3F
             STA PSG_BASE_ADDRESS
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         R0_FINE
             XBA
@@ -428,7 +470,7 @@ AY8910
             AND #$3F ; 6 bits
 
             STA PSG_BASE_ADDRESS
-            RTS
+            JMP VGM_WRITE_REGISTER
             
             
     AY_R1   CMP #1
@@ -439,7 +481,7 @@ AY8910
             AND #$F
             STA AY_3_8910_A
             
-            RTS
+            JMP VGM_WRITE_REGISTER
             
     AY_R2   CMP #2
             BNE AY_R3
@@ -453,7 +495,7 @@ AY8910
             LDA #$3F
             STA PSG_BASE_ADDRESS
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         R1_FINE
             XBA
@@ -479,7 +521,7 @@ AY8910
             AND #$3F ; 6 bits
 
             STA PSG_BASE_ADDRESS
-            RTS
+            JMP VGM_WRITE_REGISTER
             
     AY_R3   CMP #3
             BNE AY_R4
@@ -489,7 +531,7 @@ AY8910
             AND #$F
             STA AY_3_8910_B
             
-            RTS
+            JMP VGM_WRITE_REGISTER
             
     AY_R4   CMP #4
             BNE AY_R5
@@ -503,7 +545,7 @@ AY8910
             LDA #$3F
             STA PSG_BASE_ADDRESS
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         R2_FINE
             XBA
@@ -529,7 +571,7 @@ AY8910
             AND #$3F ; 6 bits
 
             STA PSG_BASE_ADDRESS
-            RTS
+            JMP VGM_WRITE_REGISTER
             
     AY_R5   CMP #5
             BNE AY_R10
@@ -539,7 +581,7 @@ AY8910
             AND #$F
             STA AY_3_8910_C
             
-            RTS
+            JMP VGM_WRITE_REGISTER
     
     AY_R10
             CMP #8
@@ -552,7 +594,7 @@ AY8910
             AND #$F
             ORA #$90
             STA PSG_BASE_ADDRESS
-            RTS
+            JMP VGM_WRITE_REGISTER
             
     AY_R11
             CMP #9
@@ -566,7 +608,7 @@ AY8910
             AND #$F
             ORA #$B0
             STA PSG_BASE_ADDRESS
-            RTS
+            JMP VGM_WRITE_REGISTER
             
     AY_R12
             CMP #10
@@ -579,11 +621,11 @@ AY8910
             AND #$F
             ORA #$D0
             STA PSG_BASE_ADDRESS
-            RTS
+            JMP VGM_WRITE_REGISTER
             
     AY_R15
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
 ; *******************************************************************
 ; * YM Commands
 ; *******************************************************************
@@ -596,7 +638,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA PSG_BASE_ADDRESS
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2413
             CMP #$51
@@ -613,7 +655,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             ;STA @lOPN2_BASE_ADDRESS,X  ; this probably won't work
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2612_P0
             CMP #$52
@@ -630,7 +672,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPN2_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2612_P1
             CMP #$53
@@ -647,7 +689,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPN2_BASE_ADDRESS + $100,X
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2151
             CMP #$54
@@ -664,7 +706,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPM_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2203
             CMP #$55
@@ -681,7 +723,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             ;STA @lOPM_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2608_P0
             CMP #$56
@@ -703,7 +745,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPN2_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2608_P1
             CMP #$57
@@ -720,7 +762,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPN2_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2610_P0
             CMP #$58
@@ -742,7 +784,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPN2_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2610_P1
             CMP #$59
@@ -759,7 +801,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPN2_BASE_ADDRESS + $100,X
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM3812
             CMP #$5A
@@ -776,7 +818,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPL3_BASE_ADRESS,X
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
         
         CHK_YM262_P0
             CMP #$5E
@@ -793,7 +835,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPL3_BASE_ADRESS,X
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM262_P1
             CMP #$5F
@@ -811,7 +853,7 @@ WRITE_YM_CMD
             STA @lOPL3_BASE_ADRESS+ $100,X
             increment_long_addr CURRENT_POSITION
     YM_DONE
-            RTS
+            JMP VGM_WRITE_REGISTER
             
 ; *******************************************************************
 ; * Wait Commands
@@ -828,7 +870,7 @@ WAIT_COMMANDS
             setas
             increment_long_addr CURRENT_POSITION
             increment_long_addr CURRENT_POSITION
-            RTS
+            JMP VGM_LOOP_DONE
             
         CHK_WAIT_60th
             CMP #$62
@@ -836,7 +878,7 @@ WAIT_COMMANDS
             
             LDX #$2df
             STX WAIT_CNTR
-            RTS
+            JMP VGM_LOOP_DONE
             
         CHK_WAIT_50th
             CMP #$63
@@ -844,14 +886,14 @@ WAIT_COMMANDS
             
             LDX #$372
             STX WAIT_CNTR
-            RTS
+            JMP VGM_LOOP_DONE
 
         CHK_END_SONG
             CMP #$66 ; end of song
             BNE CHK_DATA_BLOCK
             
             JSR VGM_SET_LOOP_POINTERS
-            RTS
+            JMP VGM_LOOP_DONE
             
         CHK_DATA_BLOCK
             CMP #$67
@@ -859,47 +901,68 @@ WAIT_COMMANDS
             
             JSR READ_DATA_BLOCK
     DONE_WAIT
-            RTS
+            JMP VGM_LOOP_DONE
             
 ; *******************************************************************
 ; * Wait N+1 Commands
 ; *******************************************************************
 WAIT_N_1
             .as
+            LDA #0
+            XBA
             LDA COMMAND
             AND #$F
             TAX
             INX ; $7n where we wait n+1
             STX WAIT_CNTR
-            RTS
+            JMP VGM_LOOP_DONE
             
 ; *******************************************************************
 ; * Play Samples and wait N
 ; *******************************************************************
 YM2612_SAMPLE
             .as
-            LDA COMMAND
+
             
             ; write directly to YM2612 DAC then wait n
             ; load a value from database
+            LDA [PCM_OFFSET]
             STA OPN2_BASE_ADDRESS + $2A
             
+            ; increment PCM_OFFSET
+            setal
+            LDA PCM_OFFSET
+            INC A
+            STA PCM_OFFSET
+            BCC YMS_WAIT
+            LDA PCM_OFFSET + 2
+            INC A
+            STA PCM_OFFSET + 2
+            
+    YMS_WAIT
+            setas
+            LDA #0
+            XBA
+            LDA COMMAND
             ; this is the wait part
             AND #$F
             TAX
             STX WAIT_CNTR
-            RTS
+            CMP #0
+            BNE YMS_NOT_ZERO
+            
+            JMP VGM_WRITE_REGISTER
+    YMS_NOT_ZERO
+            JMP VGM_LOOP_DONE
             
 ; *******************************************************************
-; * Play Samples and wait N
+; * Don't know yet
 ; *******************************************************************
 DAC_STREAM
             .as
-            LDA COMMAND
-            AND #$F
-            RTS
-            
 
+            JMP VGM_LOOP_DONE
+            
 
 VGM_SET_SONG_POINTERS
             .as
@@ -994,7 +1057,7 @@ VGM_SET_LOOP_POINTERS
 VGM_INIT_TIMER0
             .as
             
-            LDA #64
+            LDA #$20
             STA TIMER0_CMP_L
             LDA #1
             STA TIMER0_CMP_M
@@ -1059,9 +1122,11 @@ READ_DATA_BLOCK
             
             setas
             PLA
+            BEQ UNCOMPRESSED
             CMP #$C0
             BNE UNKNOWN_DATA_BLOCK
             
+    UNCOMPRESSED
             setal
             LDA DATA_STREAM_CNT ; multiply by 4
             ASL A
@@ -1087,10 +1152,10 @@ VGM_FILE
 ;.binary "songs/peddler.vgm"
 ;.binary "songs/05 Troika.vgm"
 ;.binary "songs/test.vgm"
-;.binary "songs/2 Strolling Player.vgm"
+;.binary "songs/02 Strolling Player.vgm"
 
 ; PSG FILES
-.binary "songs/03 Minigame Intro.vgm" ;- this song is so happy!!
+;.binary "songs/03 Minigame Intro.vgm" ;- this song is so happy!!
 ;.binary "songs/01 Ghostbusters Main Theme.vgm"
 
 ; YM2612
@@ -1109,7 +1174,7 @@ VGM_FILE
 ;.binary "songs/02 Character Select.vgm" ; missing DAC stuff
 
 ;YM2610 - Foenix play as OPN2
-;.binary "songs/SuperDodgeBall-01-Title.vgm" ; - a mix of DAC and YM2612
+;.binary "songs/ym2610-SuperDodgeBall-01-Title.vgm" ; - a mix of DAC and YM2612
 ;.binary "songs/Dodge-Ball 02 Team Select.vgm" ; for the 2610;
 ;.binary "songs/Figth Fever 04 Character Select.vgm" ; - not great - crash at the end
 ;.binary "songs/Street Hoop 02 Funky Heat Beach Court.vgm" ; - wait for it
@@ -1125,8 +1190,8 @@ VGM_FILE
 ;.binary "songs/ym2608-18 Rhythm of Dark [Boss 2].vgm" ; typically, the sounds of the SN76489 overwhelms the YM2612 way too much.
 
 ;AY-3-8910
-.binary "songs/ay-3-8910 Penguin Adventure 03 Forest Path.vgm"
+;.binary "songs/ay-3-8910 Penguin Adventure 03 Forest Path.vgm"
 
 ; Sega Genesis
-;.binary "songs/01 - Sega Logo.vgm"
 ;.binary "songs/Sonic-20 - Robotnik.vgm"
+.binary "songs/ym2612-12 - Attack the Barbarian.vgm"
