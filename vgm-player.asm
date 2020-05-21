@@ -52,6 +52,11 @@ CURRENT_POSITION  = $88 ; 4 bytes
 WAIT_CNTR         = $8C ; 2 bytes
 LOOP_OFFSET_REG   = $8E ; 2 bytes
 
+AY_3_8910_A       = $90 ; 2 bytes
+AY_3_8910_B       = $92 ; 2 bytes
+AY_3_8910_C       = $94 ; 2 bytes
+AY_3_8910_N       = $96 ; 2 bytes
+
 
 DISPLAY_OFFSET    = $78 ; 2 bytes
 MSG_PTR           = $7A ; 3 bytes
@@ -250,6 +255,7 @@ increment_long_addr .macro
 ; *******************************************************************
 VGM_WRITE_REGISTER
             .as
+            
             LDX WAIT_CNTR
             CPX #0
             BEQ READ_COMMAND
@@ -260,7 +266,6 @@ VGM_WRITE_REGISTER
             RTS
             
     READ_COMMAND
-            ; first byte is a  command - should be $54 for YM2151
             LDA #0
             XBA
             LDA [CURRENT_POSITION]
@@ -289,7 +294,7 @@ VGM_COMMAND_TABLE
             .word <>WAIT_N_1        ;7
             .word <>YM2612_SAMPLE   ;8
             .word <>DAC_STREAM      ;9
-            .word <>SKIP_TWO_BYTES  ;A - AY8910 - not implemented
+            .word <>AY8910          ;A - AY8910 - not implemented
             .word <>SKIP_TWO_BYTES  ;B - not implemented
             .word <>SKIP_THREE_BYTES;C - not implemented
             .word <>SKIP_THREE_BYTES;D - not implemented
@@ -308,6 +313,7 @@ SKIP_BYTE_CMD
             JSR DISPLAY_MSG
             increment_long_addr CURRENT_POSITION
             RTS
+
 SKIP_TWO_BYTES
             .as
             setal
@@ -326,6 +332,7 @@ SKIP_TWO_BYTES
     s2_2
             setas
             RTS
+
 SKIP_THREE_BYTES
             .as
             setal
@@ -348,6 +355,7 @@ SKIP_THREE_BYTES
     s3_3
             setas
             RTS
+
 SKIP_FOUR_BYTES
             .as
             setal
@@ -375,6 +383,207 @@ SKIP_FOUR_BYTES
             setas
             RTS
 
+; we need to combine R1 and R0 together before we send
+; the data to the SN76489
+AY8910 
+            .as
+            ; the second byte is the register
+            LDA [CURRENT_POSITION]
+            increment_long_addr CURRENT_POSITION
+            CMP #0 ; Register 0 fine
+            BNE AY_R1
+            
+            LDA AY_3_8910_A
+            CMP #8
+            BLT R0_FINE
+            
+            LDA #$87
+            STA PSG_BASE_ADDRESS
+            LDA #$3F
+            STA PSG_BASE_ADDRESS
+            increment_long_addr CURRENT_POSITION
+            RTS
+            
+        R0_FINE
+            XBA
+            LDA [CURRENT_POSITION]
+            increment_long_addr CURRENT_POSITION
+            
+            setal
+            LSR A ; drop the LSB
+            setas
+            PHA
+            AND #$F
+            ORA #$80
+            STA PSG_BASE_ADDRESS
+            
+            PLA
+            setal
+            LSR A
+            LSR A
+            LSR A
+            LSR A
+            setas
+            
+            AND #$3F ; 6 bits
+
+            STA PSG_BASE_ADDRESS
+            RTS
+            
+            
+    AY_R1   CMP #1
+            BNE AY_R2
+            
+            LDA [CURRENT_POSITION]
+            increment_long_addr CURRENT_POSITION
+            AND #$F
+            STA AY_3_8910_A
+            
+            RTS
+            
+    AY_R2   CMP #2
+            BNE AY_R3
+            
+            LDA AY_3_8910_B
+            CMP #8
+            BLT R1_FINE
+            
+            LDA #$A7
+            STA PSG_BASE_ADDRESS
+            LDA #$3F
+            STA PSG_BASE_ADDRESS
+            increment_long_addr CURRENT_POSITION
+            RTS
+            
+        R1_FINE
+            XBA
+            LDA [CURRENT_POSITION]
+            increment_long_addr CURRENT_POSITION
+            
+            setal
+            LSR A ; drop the LSB
+            setas
+            
+            PHA
+            AND #$F
+            ORA #$A0
+            STA PSG_BASE_ADDRESS
+            
+            PLA
+            setal
+            LSR A
+            LSR A
+            LSR A
+            LSR A
+            setas
+            AND #$3F ; 6 bits
+
+            STA PSG_BASE_ADDRESS
+            RTS
+            
+    AY_R3   CMP #3
+            BNE AY_R4
+            
+            LDA [CURRENT_POSITION]
+            increment_long_addr CURRENT_POSITION
+            AND #$F
+            STA AY_3_8910_B
+            
+            RTS
+            
+    AY_R4   CMP #4
+            BNE AY_R5
+            
+            LDA AY_3_8910_C
+            CMP #8
+            BLT R2_FINE
+            
+            LDA #$C7
+            STA PSG_BASE_ADDRESS
+            LDA #$3F
+            STA PSG_BASE_ADDRESS
+            increment_long_addr CURRENT_POSITION
+            RTS
+            
+        R2_FINE
+            XBA
+            LDA [CURRENT_POSITION]
+            increment_long_addr CURRENT_POSITION
+            
+            setal
+            LSR A ; drop the LSB
+            setas
+            
+            PHA
+            AND #$F
+            ORA #$C0
+            STA PSG_BASE_ADDRESS
+            
+            PLA
+            setal
+            LSR A
+            LSR A
+            LSR A
+            LSR A
+            setas
+            AND #$3F ; 6 bits
+
+            STA PSG_BASE_ADDRESS
+            RTS
+            
+    AY_R5   CMP #5
+            BNE AY_R10
+            
+            LDA [CURRENT_POSITION]
+            increment_long_addr CURRENT_POSITION
+            AND #$F
+            STA AY_3_8910_C
+            
+            RTS
+    
+    AY_R10
+            CMP #8
+            BNE AY_R11
+            
+            LDA #$F
+            SEC
+            SBC [CURRENT_POSITION]
+            increment_long_addr CURRENT_POSITION
+            AND #$F
+            ORA #$90
+            STA PSG_BASE_ADDRESS
+            RTS
+            
+    AY_R11
+            CMP #9
+            BNE AY_R12
+            
+            LDA #$F
+            SEC
+            SBC [CURRENT_POSITION]
+            increment_long_addr CURRENT_POSITION
+            
+            AND #$F
+            ORA #$B0
+            STA PSG_BASE_ADDRESS
+            RTS
+            
+    AY_R12
+            CMP #10
+            BNE AY_R15
+            
+            LDA #$F
+            SEC
+            SBC [CURRENT_POSITION]
+            increment_long_addr CURRENT_POSITION
+            AND #$F
+            ORA #$D0
+            STA PSG_BASE_ADDRESS
+            RTS
+            
+    AY_R15
+            increment_long_addr CURRENT_POSITION
+            RTS
 ; *******************************************************************
 ; * YM Commands
 ; *******************************************************************
@@ -382,14 +591,14 @@ WRITE_YM_CMD
             .as
             LDA COMMAND
             CMP #$50
-            BNE CHK_2413
+            BNE CHK_YM2413
             
             LDA [CURRENT_POSITION]
             STA PSG_BASE_ADDRESS
             increment_long_addr CURRENT_POSITION
             RTS
             
-        CHK_2413
+        CHK_YM2413
             CMP #$51
             BNE CHK_YM2612_P0
             
@@ -482,12 +691,17 @@ WRITE_YM_CMD
             LDA #0
             XBA
             LDA [CURRENT_POSITION]
+            CMP #$10  ; if the register is 0 to $1F, process as SSG
+            BGE YM2608_FM
+            JMP AY8910
+
+        YM2608_FM
             TAX
             increment_long_addr CURRENT_POSITION
             
             ; the third byte is the value to write in the register
             LDA [CURRENT_POSITION]
-            ;STA @lOPM_BASE_ADDRESS,X
+            STA @lOPN2_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
             RTS
             
@@ -504,7 +718,7 @@ WRITE_YM_CMD
             
             ; the third byte is the value to write in the register
             LDA [CURRENT_POSITION]
-            ;STA @lOPM_BASE_ADDRESS,X
+            STA @lOPN2_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
             RTS
             
@@ -516,6 +730,11 @@ WRITE_YM_CMD
             LDA #0
             XBA
             LDA [CURRENT_POSITION]
+            CMP #$10  ; if the register is 0 to $1F, process as SSG
+            BGE YM2610_FM
+            JMP AY8910
+            
+        YM2610_FM
             TAX
             increment_long_addr CURRENT_POSITION
             
@@ -527,7 +746,7 @@ WRITE_YM_CMD
             
         CHK_YM2610_P1
             CMP #$59
-            BNE CHK_YM_3812
+            BNE CHK_YM3812
             
             ; the second byte is the register
             LDA #0
@@ -542,7 +761,7 @@ WRITE_YM_CMD
             increment_long_addr CURRENT_POSITION
             RTS
             
-        CHK_YM_3812
+        CHK_YM3812
             CMP #$5A
             BNE CHK_YM262_P0
             
@@ -663,7 +882,7 @@ YM2612_SAMPLE
             
             ; write directly to YM2612 DAC then wait n
             ; load a value from database
-            ; STA OPN2_2A_DAC
+            STA OPN2_BASE_ADDRESS + $2A
             
             ; this is the wait part
             AND #$F
@@ -718,41 +937,52 @@ VGM_SET_LOOP_POINTERS
             setal
             LDA #0
             STA WAIT_CNTR
-            LDA SONG_START + 2
-            STA CURRENT_POSITION + 2
+            
             
             CLC
             LDY #LOOP_OFFSET
             LDA [SONG_START],Y
-            BEQ NO_LOOP_INFO
+            BEQ NO_LOOP_INFO ; if this is zero, assume that the upper word is also 0
             
-            ADC #LOOP_OFFSET
-            PHA
+            ADC #LOOP_OFFSET ; add the current position
+            STA ADDER_A
+            INY
+            INY
+            LDA [SONG_START],Y
+            STA ADDER_A + 2
             
             LDA #<>LOOPING_MSG
             STA MSG_PTR
             setas
             JSR DISPLAY_MSG
             setal
-            PLA
             
-            BRA STORE_PTR
+            LDA SONG_START
+            STA ADDER_B
+            LDA SONG_START + 2
+            STA ADDER_B + 2
+            LDA ADDER_R
+            STA CURRENT_POSITION
+            LDA ADDER_R + 2
+            STA CURRENT_POSITION + 2
+            
+            BRA VSL_DONE
             
     NO_LOOP_INFO
-            LDY #VGM_OFFSET
-            LDA [SONG_START],Y
-            ADC #VGM_OFFSET
-            PHA
-            
             LDA #<>RESET_MSG
             STA MSG_PTR
             setas
             JSR DISPLAY_MSG
             setal
-            PLA
-    STORE_PTR
+            
+            LDY #VGM_OFFSET
+            LDA [SONG_START],Y
+            ADC #VGM_OFFSET
+
             ADC SONG_START
             STA CURRENT_POSITION
+            LDA SONG_START + 2
+            STA CURRENT_POSITION + 2
             
             BCC VSL_DONE
             INC CURRENT_POSITION + 2
@@ -852,6 +1082,7 @@ READ_DATA_BLOCK
 .include "interrupt_handler.asm"
         
 VGM_FILE
+; YM2151
 ;.binary "songs/04 Kalinka.vgm"
 ;.binary "songs/peddler.vgm"
 ;.binary "songs/05 Troika.vgm"
@@ -859,15 +1090,16 @@ VGM_FILE
 ;.binary "songs/2 Strolling Player.vgm"
 
 ; PSG FILES
-;.binary "songs/03 Minigame Intro.vgm" ;- this song is so happy!!
+.binary "songs/03 Minigame Intro.vgm" ;- this song is so happy!!
 ;.binary "songs/01 Ghostbusters Main Theme.vgm"
 
 ; YM2612
 ;.binary "songs/09 Skyscrapers.vgm"
-;.binary "songs/01 Title-ym2612.vgm"
+;.binary "songs/ym2612-01 Title.vgm"
+;.binary "songs/ym2612-08 Hiromis Theme.vgm"
 
 ; YM262
-;.binary "songs/02 At Doom's Gate-ym262.vgm"  
+;.binary "songs/ym262-02 At Doom's Gate.vgm"
 
 ; YM3812
 ;.binary "songs/lemmings/lemming1.vgm"
@@ -878,5 +1110,23 @@ VGM_FILE
 
 ;YM2610 - Foenix play as OPN2
 ;.binary "songs/SuperDodgeBall-01-Title.vgm" ; - a mix of DAC and YM2612
-.binary "songs/Dodge-Ball 02 Team Select.vgm" ; for the 2610; - crashes
-;.binary "songs/Figth Fever 04 Character Select.vgm" - not great - crash at the end
+;.binary "songs/Dodge-Ball 02 Team Select.vgm" ; for the 2610;
+;.binary "songs/Figth Fever 04 Character Select.vgm" ; - not great - crash at the end
+;.binary "songs/Street Hoop 02 Funky Heat Beach Court.vgm" ; - wait for it
+
+; YM2151
+;.binary "songs/ym2151-05 After Burner-PCM.vgm"
+;.binary "songs/ym2151-34 Endless Love [Link Loop Land].vgm"
+;.binary "songs/Star Trader 03 The Logic of Shooters (Stage 1 Zone Silva).vgm"
+
+;YM2608
+;.binary "songs/ym2608-03 I'll Save You All My Justice.vgm"
+;.binary "songs/YM2608-04 Battle Theme 1.vgm"
+;.binary "songs/ym2608-18 Rhythm of Dark [Boss 2].vgm" ; typically, the sounds of the SN76489 overwhelms the YM2612 way too much.
+
+;AY-3-8910
+.binary "songs/ay-3-8910 Penguin Adventure 03 Forest Path.vgm"
+
+; Sega Genesis
+;.binary "songs/01 - Sega Logo.vgm"
+;.binary "songs/Sonic-20 - Robotnik.vgm"
