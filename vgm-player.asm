@@ -50,8 +50,7 @@ COMMAND           = $7F ; 1 byte
 SONG_START        = $80 ; 4 bytes
 CURRENT_POSITION  = $84 ; 4 bytes
 WAIT_CNTR         = $88 ; 2 bytes
-LOOP_OFFSET_REG   = $8A ; 2 bytes
-PCM_OFFSET        = $8C ; 4 bytes
+PCM_OFFSET        = $8A ; 4 bytes
 
 AY_3_8910_A       = $90 ; 2 bytes
 AY_3_8910_B       = $92 ; 2 bytes
@@ -363,7 +362,7 @@ SEEK_OFFSET
             .as
             LDA COMMAND
             CMP #$E0
-            BNE SKIP_BYTE_CMD
+            BNE SKIP_FOUR_BYTES
             
             ; read 4 bytes, add them to the databank 0 offset
             ; and store in the PCM_OFFSET
@@ -389,7 +388,7 @@ SEEK_OFFSET
             STA PCM_OFFSET + 2
             setas
             
-            JMP VGM_WRITE_REGISTER
+            JMP VGM_LOOP_DONE
             
 SKIP_FOUR_BYTES
             .as
@@ -638,7 +637,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA PSG_BASE_ADDRESS
             increment_long_addr CURRENT_POSITION
-            JMP VGM_WRITE_REGISTER
+            JMP VGM_LOOP_DONE ; for some reason, this chip needs more time between writes
             
         CHK_YM2413
             CMP #$51
@@ -672,7 +671,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPN2_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
-            JMP VGM_WRITE_REGISTER
+            JMP VGM_LOOP_DONE ; for some reason, this chip needs more time between writes
             
         CHK_YM2612_P1
             CMP #$53
@@ -689,7 +688,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPN2_BASE_ADDRESS + $100,X
             increment_long_addr CURRENT_POSITION
-            JMP VGM_WRITE_REGISTER
+            JMP VGM_LOOP_DONE ; for some reason, this chip needs more time between writes
             
         CHK_YM2151
             CMP #$54
@@ -922,7 +921,6 @@ WAIT_N_1
 ; *******************************************************************
 YM2612_SAMPLE
             .as
-
             
             ; write directly to YM2612 DAC then wait n
             ; load a value from database
@@ -948,12 +946,13 @@ YM2612_SAMPLE
             AND #$F
             TAX
             STX WAIT_CNTR
-            CMP #0
-            BNE YMS_NOT_ZERO
+            ;CPX #0
+            ;BNE YMS_NOT_ZERO
             
-            JMP VGM_WRITE_REGISTER
+            ;RTS
+            
     YMS_NOT_ZERO
-            JMP VGM_LOOP_DONE
+            JMP VGM_WRITE_REGISTER
             
 ; *******************************************************************
 ; * Don't know yet
@@ -961,7 +960,8 @@ YM2612_SAMPLE
 DAC_STREAM
             .as
 
-            JMP VGM_LOOP_DONE
+            ;JMP VGM_LOOP_DONE
+            JMP VGM_WRITE_REGISTER
             
 
 VGM_SET_SONG_POINTERS
@@ -1057,7 +1057,7 @@ VGM_SET_LOOP_POINTERS
 VGM_INIT_TIMER0
             .as
             
-            LDA #$20
+            LDA #$30
             STA TIMER0_CMP_L
             LDA #1
             STA TIMER0_CMP_M
@@ -1182,7 +1182,7 @@ VGM_FILE
 ; YM2151
 ;.binary "songs/ym2151-05 After Burner-PCM.vgm"
 ;.binary "songs/ym2151-34 Endless Love [Link Loop Land].vgm"
-;.binary "songs/Star Trader 03 The Logic of Shooters (Stage 1 Zone Silva).vgm"
+;.binary "songs/Star Trader 03 The Logic of Shooters (Stage 1 Zone Silva).vgm" ; oh this good!! I wish I had the samples.
 
 ;YM2608
 ;.binary "songs/ym2608-03 I'll Save You All My Justice.vgm"
@@ -1194,4 +1194,6 @@ VGM_FILE
 
 ; Sega Genesis
 ;.binary "songs/Sonic-20 - Robotnik.vgm"
-.binary "songs/ym2612-12 - Attack the Barbarian.vgm"
+;.binary "songs/ym2612-12 - Attack the Barbarian.vgm"
+;.binary "songs/ym2612-13 - Big Boss.vgm"
+;.binary "songs/ym2612-05 - Moon Beach.vgm"
