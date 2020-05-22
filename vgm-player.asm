@@ -1194,6 +1194,6 @@ VGM_FILE
 
 ; Sega Genesis
 ;.binary "songs/Sonic-20 - Robotnik.vgm"
-;.binary "songs/ym2612-12 - Attack the Barbarian.vgm"
+.binary "songs/ym2612-12 - Attack the Barbarian.vgm"
 ;.binary "songs/ym2612-13 - Big Boss.vgm"
 ;.binary "songs/ym2612-05 - Moon Beach.vgm"
