@@ -37,7 +37,7 @@ PSG_BASE_ADDRESS  = $AFF100
 OPN2_BASE_ADDRESS = $AFF200
 OPL3_BASE_ADRESS  = $AFE600
 
-; Important offsets
+; Important VGM file offsets
 VGM_VERSION       = $8  ; 32-bits
 SN_CLOCK          = $C  ; 32-bits
 LOOP_OFFSET       = $1C ; 32-bits
@@ -46,7 +46,13 @@ OPM_CLOCK         = $30 ; 32-bits
 VGM_OFFSET        = $34 ; 32-bits
 
 ; VGM Registers
+MIN_VERSION       = $77 ; 1 byte
+DISPLAY_OFFSET    = $78 ; 2 bytes
+MSG_PTR           = $7A ; 3 bytes
+DATA_STREAM_CNT   = $7D ; 2 byte
+
 COMMAND           = $7F ; 1 byte
+
 SONG_START        = $80 ; 4 bytes
 CURRENT_POSITION  = $84 ; 4 bytes
 WAIT_CNTR         = $88 ; 2 bytes
@@ -56,11 +62,10 @@ AY_3_8910_A       = $90 ; 2 bytes
 AY_3_8910_B       = $92 ; 2 bytes
 AY_3_8910_C       = $94 ; 2 bytes
 AY_3_8910_N       = $96 ; 2 bytes
+AY_BASE_AMPL      = $98 ; 1 byte
 
 
-DISPLAY_OFFSET    = $78 ; 2 bytes
-MSG_PTR           = $7A ; 3 bytes
-DATA_STREAM_CNT   = $7D ; 2 byte
+
 
 DATA_STREAM_TBL   = $8000 ; each entry is 4 bytes
 
@@ -113,7 +118,7 @@ VGM_START
             STA @lINT_EDGE_REG2
             STA @lINT_EDGE_REG3
 
-            LDA #~( FNX0_INT02_TMR0 ) ;  | FNX0_INT00_SOF)
+            LDA #~( FNX0_INT02_TMR0 ) ; | FNX0_INT00_SOF) ; uncomment this to debug in the IDE
             STA @lINT_MASK_REG0
             LDA #$FF
             STA @lINT_MASK_REG1
@@ -165,6 +170,11 @@ CHECK_VGM_FILE
             INY
             CMP #'m'
             BNE CHECK_FAILED
+            
+            ; get the file version
+            LDY #8
+            LDA [SONG_START],Y
+            STA MIN_VERSION
             
             RTS
             
@@ -421,11 +431,13 @@ SKIP_FOUR_BYTES
 ; the data to the SN76489
 AY8910 
             .as
+            LDA #$F
+            STA AY_BASE_AMPL
             LDA COMMAND
             CMP #$A0
             BEQ AY_COMMAND
             
-            JMP SKIP_TWO_BYTES
+            JMP SKIP_TWO_BYTES ; when mixing with the YM2612, the SN76489 is just too load.
             
     AY_COMMAND
             ; the second byte is the register
@@ -586,10 +598,9 @@ AY8910
             CMP #8
             BNE AY_R11
             
-            LDA #$F
-            SEC
-            SBC [CURRENT_POSITION]
+            LDA [CURRENT_POSITION]
             increment_long_addr CURRENT_POSITION
+            EOR AY_BASE_AMPL
             AND #$F
             ORA #$90
             STA PSG_BASE_ADDRESS
@@ -599,11 +610,9 @@ AY8910
             CMP #9
             BNE AY_R12
             
-            LDA #$F
-            SEC
-            SBC [CURRENT_POSITION]
+            LDA [CURRENT_POSITION]
             increment_long_addr CURRENT_POSITION
-            
+            EOR AY_BASE_AMPL
             AND #$F
             ORA #$B0
             STA PSG_BASE_ADDRESS
@@ -613,10 +622,9 @@ AY8910
             CMP #10
             BNE AY_R15
             
-            LDA #$F
-            SEC
-            SBC [CURRENT_POSITION]
+            LDA [CURRENT_POSITION]
             increment_long_addr CURRENT_POSITION
+            EOR AY_BASE_AMPL
             AND #$F
             ORA #$D0
             STA PSG_BASE_ADDRESS
@@ -652,6 +660,7 @@ WRITE_YM_CMD
             
             ; the third byte is the value to write in the register
             LDA [CURRENT_POSITION]
+            STA @lOPL3_BASE_ADRESS,X
             ;STA @lOPN2_BASE_ADDRESS,X  ; this probably won't work
             increment_long_addr CURRENT_POSITION
             JMP VGM_WRITE_REGISTER
@@ -921,7 +930,6 @@ WAIT_N_1
 ; *******************************************************************
 YM2612_SAMPLE
             .as
-            
             ; write directly to YM2612 DAC then wait n
             ; load a value from database
             LDA [PCM_OFFSET]
@@ -972,12 +980,19 @@ VGM_SET_SONG_POINTERS
             setas
             JSR DISPLAY_MSG
             
-            ; add the start offset
             setal
             LDA #0
             STA WAIT_CNTR
             LDA SONG_START + 2
             STA CURRENT_POSITION + 2
+            setas
+            
+            LDA MIN_VERSION
+            CMP #$50
+            BLT OLD_VERSION
+            
+            ; add the start offset
+            setal
             CLC
             LDY #VGM_OFFSET
             LDA [SONG_START],Y
@@ -990,7 +1005,19 @@ VGM_SET_SONG_POINTERS
     VSP_DONE
             
             setas
+            RTS
             
+    OLD_VERSION
+            setal
+            CLC
+            LDA #$40
+            ADC SONG_START
+            STA CURRENT_POSITION
+            BCC VSP_OLD_DONE
+            
+            INC CURRENT_POSITION + 2
+    VSP_OLD_DONE
+            setas
             RTS
             
 VGM_SET_LOOP_POINTERS
@@ -1197,3 +1224,4 @@ VGM_FILE
 .binary "songs/ym2612-12 - Attack the Barbarian.vgm"
 ;.binary "songs/ym2612-13 - Big Boss.vgm"
 ;.binary "songs/ym2612-05 - Moon Beach.vgm"
+;.binary "songs/Space Harrier - 03 - Main BGM.vgm"

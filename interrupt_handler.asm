@@ -31,7 +31,7 @@ IRQ_HANDLER
                 BEQ CHECK_PENDING_REG1
 
 ; Start of Frame (display), timer 0 (music), mouse (ignored)
-                check_irq_bit INT_PENDING_REG0, FNX0_INT00_SOF, SOF_INTERRUPT
+                ;check_irq_bit INT_PENDING_REG0, FNX0_INT00_SOF, SOF_INTERRUPT
                 check_irq_bit INT_PENDING_REG0, FNX0_INT02_TMR0, TIMER0_INTERRUPT
                 ;check_irq_bit INT_PENDING_REG0, FNX0_INT07_MOUSE, MOUSE_INTERRUPT
 
@@ -79,8 +79,8 @@ KEYBOARD_INTERRUPT
                 LDA KBD_INPT_BUF        ; Get Scan Code from KeyBoard
                 STA KEYBOARD_SC_TMP     ; Save Code Immediately
                 
-                TAX
-                LDA ScanCode_Press_Set1,X
+                ;TAX
+                ;LDA ScanCode_Press_Set1,X
                 
     DONT_REACT
                 RTS
@@ -98,7 +98,8 @@ OPM_INTERRUPT
 ; ****************************************************************
 SOF_INTERRUPT
                 .as
-                JSR VGM_WRITE_REGISTER
+                ; uncomment this to debug in the IDE
+                ; JSR VGM_WRITE_REGISTER
                 RTS
 
 

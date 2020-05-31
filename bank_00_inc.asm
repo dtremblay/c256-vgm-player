@@ -62,23 +62,23 @@ SDOS_FILE_SIZE   = $000055 ; 4 bytes for the file length
 
 ;Empty Region
 ;XXX             = $000060
-* = $60
-MIDI_COUNTER    .byte 0
-MIDI_REG        .byte 0
-MIDI_CTRL       .byte 0
-MIDI_CHANNEL    .byte 0
-MIDI_DATA1      .byte 0
-MIDI_DATA2      .byte 0
-TIMING_CNTR     .byte 0
-INSTR_ADDR      .fill 3,0
-INSTR_NUMBER    .byte $17, 0
-LINE_NUM_HEX    .byte 0
-TAB_COUNTER     .byte 1
-REM_LINES       .byte 1
-DEC_MEM         .byte 1
-PTRN_ADDR       .long 0
-LINE_ADDR       .long 0
-CONV_VAL        .byte 0
+; * = $60
+; MIDI_COUNTER    .byte 0
+; MIDI_REG        .byte 0
+; MIDI_CTRL       .byte 0
+; MIDI_CHANNEL    .byte 0
+; MIDI_DATA1      .byte 0
+; MIDI_DATA2      .byte 0
+; TIMING_CNTR     .byte 0
+; INSTR_ADDR      .fill 3,0
+; INSTR_NUMBER    .byte $17, 0
+; LINE_NUM_HEX    .byte 0
+; TAB_COUNTER     .byte 1
+; REM_LINES       .byte 1
+; DEC_MEM         .byte 1
+; PTRN_ADDR       .long 0
+; LINE_ADDR       .long 0
+; CONV_VAL        .byte 0
 
 ;..
 ;..
