@@ -16,21 +16,23 @@
 ; *   Finally, call VGM_INIT_TIMER0 to initialize TIMER0.
 ; *   Chips supported at this time are:
 ; *     - SN76489 (PSG)
-; *     - YM2612 (OPN2)
-; *     - YM2151 (OPM)
-; *     - YM262 (OPL3)
-; *     - YM3812 (OPL2)
+; *     - YM2612  (OPN2)
+; *     - YM2151  (OPM)
+; *     - YM262   (OPL3)
+; *     - YM3812  (OPL2)
+; ****************************************************************************
+; * This version of the application will be bundled into a PGX file.
+; * The way to use this application is to put it on the SD Card and run:
+; *   BRUN VGMPLAY.PGX "@s:yousong.vgm"
 ; ****************************************************************************
 .cpu "65816"
 .include "macros_inc.asm"
-.include "base.asm"
 .include "bank_00_inc.asm"
-.include "interrupt_def.asm"
-.include "keyboard_def.asm"
-.include "vicky_def.asm"
+.include "vicky_ii_def.asm"
 .include "kernel_inc.asm"
 .include "timer_def.asm"
 .include "math_def.asm"
+.include "interrupt_def.asm"
 
 OPM_BASE_ADDRESS  = $AFF000
 PSG_BASE_ADDRESS  = $AFF100
@@ -40,6 +42,7 @@ OPL3_BASE_ADRESS  = $AFE600
 ; Important VGM file offsets
 VGM_VERSION       = $8  ; 32-bits
 SN_CLOCK          = $C  ; 32-bits
+GD3_OFFSET        = $14 ; 32-bits
 LOOP_OFFSET       = $1C ; 32-bits
 YM_OFFSET         = $2C ; 32-bits
 OPM_CLOCK         = $30 ; 32-bits
@@ -57,19 +60,19 @@ SONG_START        = $80 ; 4 bytes
 CURRENT_POSITION  = $84 ; 4 bytes
 WAIT_CNTR         = $88 ; 2 bytes
 PCM_OFFSET        = $8A ; 4 bytes
+GD3_POSITION      = $8E ; 4 bytes
 
-AY_3_8910_A       = $90 ; 2 bytes
-AY_3_8910_B       = $92 ; 2 bytes
-AY_3_8910_C       = $94 ; 2 bytes
-AY_3_8910_N       = $96 ; 2 bytes
-AY_BASE_AMPL      = $98 ; 1 byte
-
-
-
+AY_3_8910_A       = $92 ; 2 bytes
+AY_3_8910_B       = $94 ; 2 bytes
+AY_3_8910_C       = $96 ; 2 bytes
+AY_3_8910_N       = $98 ; 2 bytes
+AY_BASE_AMPL      = $9A ; 1 byte
 
 DATA_STREAM_TBL   = $8000 ; each entry is 4 bytes
 
-* = $160000
+VGM_FILE          = $170000  ; the address to store the VGM data.
+
+* = $162300
 
 VGM_START
             .as
@@ -78,6 +81,8 @@ VGM_START
             setxl
             
             JSL CLRSCREEN
+            
+            JSR LOAD_PGX_FILE
             
             ; disable the cursor
             LDA #0
@@ -96,12 +101,10 @@ VGM_START
             LDA #`VGM_FILE
             STA CURRENT_POSITION + 2
             STA SONG_START + 2
-            setal
-            LDA #<>VGM_FILE
-            STA SONG_START
-            setas
+
+            LDX #<>VGM_FILE
+            STX SONG_START
             
-            ; first three bytes should be VGM - if not, maybe it's compressed?
             LDA #0
             STA COMMAND
             JSR CHECK_VGM_FILE
@@ -109,6 +112,8 @@ VGM_START
             BNE INVALID_FILE
             
             JSR VGM_SET_SONG_POINTERS
+            
+            JSR VGM_DISPLAY_GD3
             
             JSR VGM_INIT_TIMER0
                 
@@ -138,7 +143,7 @@ VGM_START
             setas
             JSR DISPLAY_MSG
             
-            BRA LOOP
+            RTL
             
 RESET_MSG        .text 'Restarting song:',0
 LOOPING_MSG      .text 'Looping song:',0
@@ -149,6 +154,7 @@ UNK_CMD2_MSG     .text 'Unknown 2-Byte Command:',0
 UNK_CMD3_MSG     .text 'Unknown 3-Byte Command:',0
 UNK_CMD4_MSG     .text 'Unknown 4-Byte Command:',0
 HEX_VALUES       .text '0123456789ABCDEF'
+GD3_ERR_MSG      .text 'Couldn''t read Gd3 Info', 0
 
 ; *******************************************************************
 ; * First three bytes of the file must be VGM
@@ -183,6 +189,18 @@ CHECK_VGM_FILE
             STA COMMAND
             RTS
             
+LOAD_PGX_FILE
+            .as
+            .xl
+            LDX #0
+    FS_LOOP
+            LDA [DOS_RUN_PARAM],X
+            INX
+            CMP #' '
+            BNE FS_LOOP
+            
+            RTS
+            
 DISPLAY_MSG
             .as
             PHY
@@ -191,10 +209,10 @@ DISPLAY_MSG
             LDA #0
             XBA
     DISPLAY_NEXT
-            LDA #$2D
-            STA $AF2000,X
+            LDA #$2D   ; Text color
+            STA $AF2000,X  ; offset to Text LUT $AF:C000
             LDA [MSG_PTR],Y
-            STA $AF0000,X
+            STA $AF0000,X  ; offset to Text $AF:A000
             ; write the color for the characters - green
             
             INX
@@ -202,6 +220,7 @@ DISPLAY_MSG
             CMP #0
             BNE DISPLAY_NEXT
             
+            ; display the command hex
             LDA #$2D
             STA $AF2000,X
             LDA COMMAND
@@ -229,17 +248,17 @@ DISPLAY_MSG
             setal
             LDA DISPLAY_OFFSET
             CLC
-            ADC #$80
+            ADC #80 ; 80 columns in 640x480 mode
             STA DISPLAY_OFFSET
             setas
             
             XBA
-            CMP #$BF
+            CMP #$B1 ; 80 COLS * 56 ROWS = $1180  - SO $11 + A0 = $B1
             BLT DISPLAY_DONE
             
             XBA
             BNE FIRST_COL
-            LDX #$A020 ; create a second column
+            LDX #$A000 + 40 ; create a second column
             STX DISPLAY_OFFSET
             BRA DISPLAY_DONE
         FIRST_COL
@@ -1004,6 +1023,20 @@ VGM_SET_SONG_POINTERS
             INC CURRENT_POSITION + 2
     VSP_DONE
             
+            ; compute the GD3 information position
+            CLC
+            LDY #GD3_OFFSET
+            LDA [SONG_START],Y
+            ADC #GD3_OFFSET
+            ADC SONG_START
+            STA GD3_POSITION
+            
+            INY
+            INY
+            LDA [SONG_START],Y
+            ADC #GD3_OFFSET + 2
+            STA GD3_POSITION + 2
+            
             setas
             RTS
             
@@ -1083,6 +1116,15 @@ VGM_SET_LOOP_POINTERS
 
 VGM_INIT_TIMER0
             .as
+            
+            ; set the timer 0 interrupt to the VGM_WRITE_REGISTER address
+            setal
+            LDA #<>VGM_WRITE_REGISTER
+            STA TIMER0INTSUB
+            LDA #`VGM_WRITE_REGISTER
+            AND #$FF 
+            STA TIMER0INTSUB + 1
+            setas
             
             LDA #$30
             STA TIMER0_CMP_L
@@ -1170,58 +1212,102 @@ READ_DATA_BLOCK
             
     UNKNOWN_DATA_BLOCK
             RTS
+            
+VGM_DISPLAY_GD3
+            .as
+            ; ensure the Gd3 data is correct, otherwise return
+            LDY #0
+            LDA [GD3_POSITION],Y
+            CMP #'G'
+            BNE GD3_ERROR
+            INY
+            LDA [GD3_POSITION],Y
+            CMP #'d'
+            BNE GD3_ERROR
+            INY
+            LDA [GD3_POSITION],Y
+            CMP #'3'
+            BNE GD3_ERROR
+            INY
+            LDA [GD3_POSITION],Y
+            CMP #' '
+            BNE GD3_ERROR
+            INY
+            setal
+            LDA [GD3_POSITION],Y
+            CMP #$100
+            BNE GD3_ERROR
+            INY
+            INY
+            LDA [GD3_POSITION],Y
+            BNE GD3_ERROR
+    
+            setas
+            INY
+            INY
+            
+            INY  ; skip the length
+            INY
+            INY
+            INY
+            
+            ; header is OK.
+            JSR DISPLAY_MSG_16  ; display the track name in English
+            JSR DISCARD_16      ; discard the track name in Japanese
+            JSR DISCARD_16      ; discard the game name in English
+            JSR DISCARD_16      ; discard the game name in Japanese
+            JSR DISCARD_16      ; discard the system name in English
+            JSR DISCARD_16      ; discard the system name in Japanese
+            JSR DISPLAY_MSG_16  ; display the author's name in English
+            
+            RTS
+            
+GD3_ERROR   
+            setas
+            LDX #<>GD3_ERR_MSG
+            STX MSG_PTR
+            JSR DISPLAY_MSG
+            RTS
 
-.include "interrupt_handler.asm"
-        
-VGM_FILE
-; YM2151
-;.binary "songs/04 Kalinka.vgm"
-;.binary "songs/peddler.vgm"
-;.binary "songs/05 Troika.vgm"
-;.binary "songs/test.vgm"
-;.binary "songs/02 Strolling Player.vgm"
-
-; PSG FILES
-;.binary "songs/03 Minigame Intro.vgm" ;- this song is so happy!!
-;.binary "songs/01 Ghostbusters Main Theme.vgm"
-
-; YM2612
-;.binary "songs/09 Skyscrapers.vgm"
-;.binary "songs/ym2612-01 Title.vgm"
-;.binary "songs/ym2612-08 Hiromis Theme.vgm"
-
-; YM262
-;.binary "songs/ym262-02 At Doom's Gate.vgm"
-
-; YM3812
-;.binary "songs/lemmings/lemming1.vgm"
-;.binary "songs/lemmings/tim5.vgm"
-
-; YM262 + DAC
-;.binary "songs/02 Character Select.vgm" ; missing DAC stuff
-
-;YM2610 - Foenix play as OPN2
-;.binary "songs/ym2610-SuperDodgeBall-01-Title.vgm" ; - a mix of DAC and YM2612
-;.binary "songs/Dodge-Ball 02 Team Select.vgm" ; for the 2610;
-;.binary "songs/Figth Fever 04 Character Select.vgm" ; - not great - crash at the end
-;.binary "songs/Street Hoop 02 Funky Heat Beach Court.vgm" ; - wait for it
-
-; YM2151
-;.binary "songs/ym2151-05 After Burner-PCM.vgm"
-;.binary "songs/ym2151-34 Endless Love [Link Loop Land].vgm"
-;.binary "songs/Star Trader 03 The Logic of Shooters (Stage 1 Zone Silva).vgm" ; oh this good!! I wish I had the samples.
-
-;YM2608
-;.binary "songs/ym2608-03 I'll Save You All My Justice.vgm"
-;.binary "songs/YM2608-04 Battle Theme 1.vgm"
-;.binary "songs/ym2608-18 Rhythm of Dark [Boss 2].vgm" ; typically, the sounds of the SN76489 overwhelms the YM2612 way too much.
-
-;AY-3-8910
-;.binary "songs/ay-3-8910 Penguin Adventure 03 Forest Path.vgm"
-
-; Sega Genesis
-;.binary "songs/Sonic-20 - Robotnik.vgm"
-.binary "songs/ym2612-12 - Attack the Barbarian.vgm"
-;.binary "songs/ym2612-13 - Big Boss.vgm"
-;.binary "songs/ym2612-05 - Moon Beach.vgm"
-;.binary "songs/Space Harrier - 03 - Main BGM.vgm"
+; read 16 bit character data.  English is still ASCII
+; when a 16-bit 0 is found, return
+; Y countains an offset from GD3_POSITION
+DISPLAY_MSG_16
+            .as
+            LDX DISPLAY_OFFSET
+            
+    DM16_LOOP
+            setas
+            LDA #$2D   ; Text color
+            STA $AF2000,X  ; offset to Text LUT $AF:C000
+            setal
+            LDA [GD3_POSITION],Y
+            
+            setas
+            STA $AF0000,X  ; offset to Text LUT $AF:C000
+            
+            INY
+            INY
+            INX
+            setal
+            CMP #0
+            BNE DM16_LOOP
+            
+            LDA DISPLAY_OFFSET
+            CLC
+            ADC #80 ; 80 columns in 640x480 mode
+            STA DISPLAY_OFFSET
+            setas
+            RTS
+    
+; read all characters until a 16 bit 0 is found
+DISCARD_16
+            setal
+    DIS_LOOP
+            LDA [GD3_POSITION],Y
+            INY
+            INY
+            CMP #0
+            BNE DIS_LOOP
+            setas
+            RTS
