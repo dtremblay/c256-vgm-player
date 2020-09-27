@@ -1216,7 +1216,7 @@ VGM_INIT_TIMER0
             LDA #`VGM_WRITE_REGISTER
             STA TIMER0INTSUB + 3
             
-            LDA #$30
+            LDA #$10
             STA TIMER0_CMP_L
             LDA #1
             STA TIMER0_CMP_M
@@ -1243,7 +1243,15 @@ VGM_INIT_TIMER0
 ; *******************************************************************************
 READ_DATA_BLOCK
             .as
+            PHD
+            PHB
+            LDA #0
+            PHA
+            PLB  ; reset bank
+            
             setal
+            LDA #0
+            TCD  ; reset direct reg
             LDA #<>DATA_BLOCK_MSG
             STA MSG_PTR
             setas
@@ -1301,6 +1309,8 @@ READ_DATA_BLOCK
             setas
             
     UNKNOWN_DATA_BLOCK
+            PLB
+            PLD
             RTS
             
 VGM_DISPLAY_GD3

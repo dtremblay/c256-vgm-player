@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.54.1900 listing file
 ; 64tass.exe --long-address -x --intel-hex -o vgm-player.hex --list vgm-player.lst vgm-player.asm
-; Sat Sep 26 23:22:17 2020
+; Sat Sep 26 23:33:05 2020
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -607,7 +607,7 @@
 .16223c	a5 7f		lda $7f		            LDA COMMAND ; if the command is still 0, it's a vgm file
 .16223e	d0 34		bne $162274	            BNE INVALID_FILE
 .162240	20 36 2a	jsr $162a36	            JSR VGM_SET_SONG_POINTERS
-.162243	20 c3 2b	jsr $162bc3	            JSR VGM_DISPLAY_GD3
+.162243	20 cf 2b	jsr $162bcf	            JSR VGM_DISPLAY_GD3
 .162246	20 fb 2a	jsr $162afb	            JSR VGM_INIT_TIMER0
 .162249	a9 ff		lda #$ff	            LDA #$FF
 .16224b	8f 48 01 00	sta $000148	            STA @lINT_EDGE_REG0
@@ -1699,7 +1699,7 @@
 .162b04	e2 20		sep #$20	                SEP #$20        ; set A short
 .162b06	a9 16		lda #$16	            LDA #`VGM_WRITE_REGISTER
 .162b08	8f 3f 11 38	sta $38113f	            STA TIMER0INTSUB + 3
-.162b0c	a9 30		lda #$30	            LDA #$30
+.162b0c	a9 10		lda #$10	            LDA #$10
 .162b0e	8d 65 01	sta $0165	            STA TIMER0_CMP_L
 .162b11	a9 01		lda #$01	            LDA #1
 .162b13	8d 66 01	sta $0166	            STA TIMER0_CMP_M
@@ -1715,35 +1715,36 @@
 .162b2d	8d 60 01	sta $0160	            STA TIMER0_CTRL_REG
 .162b30	60		rts		            RTS
 .162b31					READ_DATA_BLOCK
-.162b31	c2 20		rep #$20	                REP #$20        ; set A long
-.162b33	a9 a2 22	lda #$22a2	            LDA #<>DATA_BLOCK_MSG
-.162b36	85 7a		sta $7a		            STA MSG_PTR
-.162b38	e2 20		sep #$20	                SEP #$20        ; set A short
-.162b3a	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
-.162b3d	a7 84		lda [$84]	            LDA [CURRENT_POSITION] ; should be 66
-.162b3f	c2 20		rep #$20	                REP #$20        ; set A long
-.162b41	e6 84		inc $84		            INC CURRENT_POSITION
-.162b43	d0 02		bne $162b47	            BNE increment_done
-.162b45	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162b47					    increment_done
-.162b47	e2 20		sep #$20	                SEP #$20        ; set A short
-.162b49	a7 84		lda [$84]	            LDA  [CURRENT_POSITION] ; should be the type - I expect $C0
-.162b4b	48		pha		            PHA
-.162b4c	c2 20		rep #$20	                REP #$20        ; set A long
-.162b4e	e6 84		inc $84		            INC CURRENT_POSITION
-.162b50	d0 02		bne $162b54	            BNE increment_done
-.162b52	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162b54					    increment_done
-.162b54	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b31	0b		phd		            PHD
+.162b32	8b		phb		            PHB
+.162b33	a9 00		lda #$00	            LDA #0
+.162b35	48		pha		            PHA
+.162b36	ab		plb		            PLB  ; reset bank
+.162b37	c2 20		rep #$20	                REP #$20        ; set A long
+.162b39	a9 00 00	lda #$0000	            LDA #0
+.162b3c	5b		tcd		            TCD  ; reset direct reg
+.162b3d	a9 a2 22	lda #$22a2	            LDA #<>DATA_BLOCK_MSG
+.162b40	85 7a		sta $7a		            STA MSG_PTR
+.162b42	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b44	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
+.162b47	a7 84		lda [$84]	            LDA [CURRENT_POSITION] ; should be 66
+.162b49	c2 20		rep #$20	                REP #$20        ; set A long
+.162b4b	e6 84		inc $84		            INC CURRENT_POSITION
+.162b4d	d0 02		bne $162b51	            BNE increment_done
+.162b4f	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162b51					    increment_done
+.162b51	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b53	a7 84		lda [$84]	            LDA  [CURRENT_POSITION] ; should be the type - I expect $C0
+.162b55	48		pha		            PHA
 .162b56	c2 20		rep #$20	                REP #$20        ; set A long
-.162b58	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162b5a	8d 20 01	sta $0120	            STA ADDER_A
-.162b5d	c2 20		rep #$20	                REP #$20        ; set A long
-.162b5f	e6 84		inc $84		            INC CURRENT_POSITION
-.162b61	d0 02		bne $162b65	            BNE increment_done
-.162b63	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162b65					    increment_done
-.162b65	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b58	e6 84		inc $84		            INC CURRENT_POSITION
+.162b5a	d0 02		bne $162b5e	            BNE increment_done
+.162b5c	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162b5e					    increment_done
+.162b5e	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b60	c2 20		rep #$20	                REP #$20        ; set A long
+.162b62	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162b64	8d 20 01	sta $0120	            STA ADDER_A
 .162b67	c2 20		rep #$20	                REP #$20        ; set A long
 .162b69	e6 84		inc $84		            INC CURRENT_POSITION
 .162b6b	d0 02		bne $162b6f	            BNE increment_done
@@ -1751,14 +1752,14 @@
 .162b6f					    increment_done
 .162b6f	e2 20		sep #$20	                SEP #$20        ; set A short
 .162b71	c2 20		rep #$20	                REP #$20        ; set A long
-.162b73	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162b75	8d 22 01	sta $0122	            STA ADDER_A + 2
-.162b78	c2 20		rep #$20	                REP #$20        ; set A long
-.162b7a	e6 84		inc $84		            INC CURRENT_POSITION
-.162b7c	d0 02		bne $162b80	            BNE increment_done
-.162b7e	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162b80					    increment_done
-.162b80	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b73	e6 84		inc $84		            INC CURRENT_POSITION
+.162b75	d0 02		bne $162b79	            BNE increment_done
+.162b77	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162b79					    increment_done
+.162b79	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b7b	c2 20		rep #$20	                REP #$20        ; set A long
+.162b7d	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162b7f	8d 22 01	sta $0122	            STA ADDER_A + 2
 .162b82	c2 20		rep #$20	                REP #$20        ; set A long
 .162b84	e6 84		inc $84		            INC CURRENT_POSITION
 .162b86	d0 02		bne $162b8a	            BNE increment_done
@@ -1766,111 +1767,119 @@
 .162b8a					    increment_done
 .162b8a	e2 20		sep #$20	                SEP #$20        ; set A short
 .162b8c	c2 20		rep #$20	                REP #$20        ; set A long
-.162b8e	a5 84		lda $84		            LDA CURRENT_POSITION
-.162b90	8d 24 01	sta $0124	            STA ADDER_B
-.162b93	a5 86		lda $86		            LDA CURRENT_POSITION + 2
-.162b95	8d 26 01	sta $0126	            STA ADDER_B + 2
-.162b98	ad 28 01	lda $0128	            LDA ADDER_R
-.162b9b	85 84		sta $84		            STA CURRENT_POSITION
-.162b9d	ad 2a 01	lda $012a	            LDA ADDER_R + 2
-.162ba0	85 86		sta $86		            STA CURRENT_POSITION + 2
-.162ba2	e2 20		sep #$20	                SEP #$20        ; set A short
-.162ba4	68		pla		            PLA
-.162ba5	f0 04		beq $162bab	            BEQ UNCOMPRESSED
-.162ba7	c9 c0		cmp #$c0	            CMP #$C0
-.162ba9	d0 17		bne $162bc2	            BNE UNKNOWN_DATA_BLOCK
-.162bab					    UNCOMPRESSED
-.162bab	c2 20		rep #$20	                REP #$20        ; set A long
-.162bad	a5 7d		lda $7d		            LDA DATA_STREAM_CNT ; multiply by 4
-.162baf	0a		asl a		            ASL A
-.162bb0	0a		asl a		            ASL A
-.162bb1	aa		tax		            TAX
-.162bb2	ad 24 01	lda $0124	            LDA ADDER_B
-.162bb5	9d 00 80	sta $8000,x	            STA DATA_STREAM_TBL,X
-.162bb8	ad 26 01	lda $0126	            LDA ADDER_B + 2
-.162bbb	9d 02 80	sta $8002,x	            STA DATA_STREAM_TBL,X + 2
-.162bbe	e6 7d		inc $7d		            INC DATA_STREAM_CNT
-.162bc0	e2 20		sep #$20	                SEP #$20        ; set A short
-.162bc2					    UNKNOWN_DATA_BLOCK
-.162bc2	60		rts		            RTS
-.162bc3					VGM_DISPLAY_GD3
-.162bc3	a0 00 00	ldy #$0000	            LDY #0
-.162bc6	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162bc8	c9 47		cmp #$47	            CMP #'G'
-.162bca	d0 43		bne $162c0f	            BNE GD3_ERROR
-.162bcc	c8		iny		            INY
-.162bcd	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162bcf	c9 64		cmp #$64	            CMP #'d'
-.162bd1	d0 3c		bne $162c0f	            BNE GD3_ERROR
-.162bd3	c8		iny		            INY
-.162bd4	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162bd6	c9 33		cmp #$33	            CMP #'3'
-.162bd8	d0 35		bne $162c0f	            BNE GD3_ERROR
-.162bda	c8		iny		            INY
-.162bdb	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162bdd	c9 20		cmp #$20	            CMP #' '
-.162bdf	d0 2e		bne $162c0f	            BNE GD3_ERROR
-.162be1	c8		iny		            INY
-.162be2	c2 20		rep #$20	                REP #$20        ; set A long
-.162be4	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162be6	c9 00 01	cmp #$0100	            CMP #$100
-.162be9	d0 24		bne $162c0f	            BNE GD3_ERROR
-.162beb	c8		iny		            INY
-.162bec	c8		iny		            INY
-.162bed	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162bef	d0 1e		bne $162c0f	            BNE GD3_ERROR
-.162bf1	e2 20		sep #$20	                SEP #$20        ; set A short
-.162bf3	c8		iny		            INY
-.162bf4	c8		iny		            INY
-.162bf5	c8		iny		            INY  ; skip the length
-.162bf6	c8		iny		            INY
+.162b8e	e6 84		inc $84		            INC CURRENT_POSITION
+.162b90	d0 02		bne $162b94	            BNE increment_done
+.162b92	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162b94					    increment_done
+.162b94	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b96	c2 20		rep #$20	                REP #$20        ; set A long
+.162b98	a5 84		lda $84		            LDA CURRENT_POSITION
+.162b9a	8d 24 01	sta $0124	            STA ADDER_B
+.162b9d	a5 86		lda $86		            LDA CURRENT_POSITION + 2
+.162b9f	8d 26 01	sta $0126	            STA ADDER_B + 2
+.162ba2	ad 28 01	lda $0128	            LDA ADDER_R
+.162ba5	85 84		sta $84		            STA CURRENT_POSITION
+.162ba7	ad 2a 01	lda $012a	            LDA ADDER_R + 2
+.162baa	85 86		sta $86		            STA CURRENT_POSITION + 2
+.162bac	e2 20		sep #$20	                SEP #$20        ; set A short
+.162bae	68		pla		            PLA
+.162baf	f0 04		beq $162bb5	            BEQ UNCOMPRESSED
+.162bb1	c9 c0		cmp #$c0	            CMP #$C0
+.162bb3	d0 17		bne $162bcc	            BNE UNKNOWN_DATA_BLOCK
+.162bb5					    UNCOMPRESSED
+.162bb5	c2 20		rep #$20	                REP #$20        ; set A long
+.162bb7	a5 7d		lda $7d		            LDA DATA_STREAM_CNT ; multiply by 4
+.162bb9	0a		asl a		            ASL A
+.162bba	0a		asl a		            ASL A
+.162bbb	aa		tax		            TAX
+.162bbc	ad 24 01	lda $0124	            LDA ADDER_B
+.162bbf	9d 00 80	sta $8000,x	            STA DATA_STREAM_TBL,X
+.162bc2	ad 26 01	lda $0126	            LDA ADDER_B + 2
+.162bc5	9d 02 80	sta $8002,x	            STA DATA_STREAM_TBL,X + 2
+.162bc8	e6 7d		inc $7d		            INC DATA_STREAM_CNT
+.162bca	e2 20		sep #$20	                SEP #$20        ; set A short
+.162bcc					    UNKNOWN_DATA_BLOCK
+.162bcc	ab		plb		            PLB
+.162bcd	2b		pld		            PLD
+.162bce	60		rts		            RTS
+.162bcf					VGM_DISPLAY_GD3
+.162bcf	a0 00 00	ldy #$0000	            LDY #0
+.162bd2	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162bd4	c9 47		cmp #$47	            CMP #'G'
+.162bd6	d0 43		bne $162c1b	            BNE GD3_ERROR
+.162bd8	c8		iny		            INY
+.162bd9	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162bdb	c9 64		cmp #$64	            CMP #'d'
+.162bdd	d0 3c		bne $162c1b	            BNE GD3_ERROR
+.162bdf	c8		iny		            INY
+.162be0	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162be2	c9 33		cmp #$33	            CMP #'3'
+.162be4	d0 35		bne $162c1b	            BNE GD3_ERROR
+.162be6	c8		iny		            INY
+.162be7	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162be9	c9 20		cmp #$20	            CMP #' '
+.162beb	d0 2e		bne $162c1b	            BNE GD3_ERROR
+.162bed	c8		iny		            INY
+.162bee	c2 20		rep #$20	                REP #$20        ; set A long
+.162bf0	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162bf2	c9 00 01	cmp #$0100	            CMP #$100
+.162bf5	d0 24		bne $162c1b	            BNE GD3_ERROR
 .162bf7	c8		iny		            INY
 .162bf8	c8		iny		            INY
-.162bf9	20 1a 2c	jsr $162c1a	            JSR DISPLAY_MSG_16  ; display the track name in English
-.162bfc	20 43 2c	jsr $162c43	            JSR DISCARD_16      ; discard the track name in Japanese
-.162bff	20 43 2c	jsr $162c43	            JSR DISCARD_16      ; discard the game name in English
-.162c02	20 43 2c	jsr $162c43	            JSR DISCARD_16      ; discard the game name in Japanese
-.162c05	20 43 2c	jsr $162c43	            JSR DISCARD_16      ; discard the system name in English
-.162c08	20 43 2c	jsr $162c43	            JSR DISCARD_16      ; discard the system name in Japanese
-.162c0b	20 1a 2c	jsr $162c1a	            JSR DISPLAY_MSG_16  ; display the author's name in English
-.162c0e	60		rts		            RTS
-.162c0f					GD3_ERROR
-.162c0f	e2 20		sep #$20	                SEP #$20        ; set A short
-.162c11	a2 39 23	ldx #$2339	            LDX #<>GD3_ERR_MSG
-.162c14	86 7a		stx $7a		            STX MSG_PTR
-.162c16	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
-.162c19	60		rts		            RTS
-.162c1a					DISPLAY_MSG_16
-.162c1a	a6 78		ldx $78		            LDX DISPLAY_OFFSET
-.162c1c					    DM16_LOOP
-.162c1c	e2 20		sep #$20	                SEP #$20        ; set A short
-.162c1e	a9 2d		lda #$2d	            LDA #$2D   ; Text color
-.162c20	9f 00 20 af	sta $af2000,x	            STA $AF2000,X  ; offset to Text LUT $AF:C000
-.162c24	c2 20		rep #$20	                REP #$20        ; set A long
-.162c26	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162bf9	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162bfb	d0 1e		bne $162c1b	            BNE GD3_ERROR
+.162bfd	e2 20		sep #$20	                SEP #$20        ; set A short
+.162bff	c8		iny		            INY
+.162c00	c8		iny		            INY
+.162c01	c8		iny		            INY  ; skip the length
+.162c02	c8		iny		            INY
+.162c03	c8		iny		            INY
+.162c04	c8		iny		            INY
+.162c05	20 26 2c	jsr $162c26	            JSR DISPLAY_MSG_16  ; display the track name in English
+.162c08	20 4f 2c	jsr $162c4f	            JSR DISCARD_16      ; discard the track name in Japanese
+.162c0b	20 4f 2c	jsr $162c4f	            JSR DISCARD_16      ; discard the game name in English
+.162c0e	20 4f 2c	jsr $162c4f	            JSR DISCARD_16      ; discard the game name in Japanese
+.162c11	20 4f 2c	jsr $162c4f	            JSR DISCARD_16      ; discard the system name in English
+.162c14	20 4f 2c	jsr $162c4f	            JSR DISCARD_16      ; discard the system name in Japanese
+.162c17	20 26 2c	jsr $162c26	            JSR DISPLAY_MSG_16  ; display the author's name in English
+.162c1a	60		rts		            RTS
+.162c1b					GD3_ERROR
+.162c1b	e2 20		sep #$20	                SEP #$20        ; set A short
+.162c1d	a2 39 23	ldx #$2339	            LDX #<>GD3_ERR_MSG
+.162c20	86 7a		stx $7a		            STX MSG_PTR
+.162c22	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
+.162c25	60		rts		            RTS
+.162c26					DISPLAY_MSG_16
+.162c26	a6 78		ldx $78		            LDX DISPLAY_OFFSET
+.162c28					    DM16_LOOP
 .162c28	e2 20		sep #$20	                SEP #$20        ; set A short
-.162c2a	9f 00 00 af	sta $af0000,x	            STA $AF0000,X  ; offset to Text LUT $AF:C000
-.162c2e	c8		iny		            INY
-.162c2f	c8		iny		            INY
-.162c30	e8		inx		            INX
-.162c31	c2 20		rep #$20	                REP #$20        ; set A long
-.162c33	c9 00 00	cmp #$0000	            CMP #0
-.162c36	d0 e4		bne $162c1c	            BNE DM16_LOOP
-.162c38	a5 78		lda $78		            LDA DISPLAY_OFFSET
-.162c3a	18		clc		            CLC
-.162c3b	69 50 00	adc #$0050	            ADC #80 ; 80 columns in 640x480 mode
-.162c3e	85 78		sta $78		            STA DISPLAY_OFFSET
-.162c40	e2 20		sep #$20	                SEP #$20        ; set A short
-.162c42	60		rts		            RTS
-.162c43					DISCARD_16
-.162c43	c2 20		rep #$20	                REP #$20        ; set A long
-.162c45					    DIS_LOOP
-.162c45	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162c47	c8		iny		            INY
-.162c48	c8		iny		            INY
-.162c49	c9 00 00	cmp #$0000	            CMP #0
-.162c4c	d0 f7		bne $162c45	            BNE DIS_LOOP
-.162c4e	e2 20		sep #$20	                SEP #$20        ; set A short
-.162c50	60		rts		            RTS
+.162c2a	a9 2d		lda #$2d	            LDA #$2D   ; Text color
+.162c2c	9f 00 20 af	sta $af2000,x	            STA $AF2000,X  ; offset to Text LUT $AF:C000
+.162c30	c2 20		rep #$20	                REP #$20        ; set A long
+.162c32	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162c34	e2 20		sep #$20	                SEP #$20        ; set A short
+.162c36	9f 00 00 af	sta $af0000,x	            STA $AF0000,X  ; offset to Text LUT $AF:C000
+.162c3a	c8		iny		            INY
+.162c3b	c8		iny		            INY
+.162c3c	e8		inx		            INX
+.162c3d	c2 20		rep #$20	                REP #$20        ; set A long
+.162c3f	c9 00 00	cmp #$0000	            CMP #0
+.162c42	d0 e4		bne $162c28	            BNE DM16_LOOP
+.162c44	a5 78		lda $78		            LDA DISPLAY_OFFSET
+.162c46	18		clc		            CLC
+.162c47	69 50 00	adc #$0050	            ADC #80 ; 80 columns in 640x480 mode
+.162c4a	85 78		sta $78		            STA DISPLAY_OFFSET
+.162c4c	e2 20		sep #$20	                SEP #$20        ; set A short
+.162c4e	60		rts		            RTS
+.162c4f					DISCARD_16
+.162c4f	c2 20		rep #$20	                REP #$20        ; set A long
+.162c51					    DIS_LOOP
+.162c51	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162c53	c8		iny		            INY
+.162c54	c8		iny		            INY
+.162c55	c9 00 00	cmp #$0000	            CMP #0
+.162c58	d0 f7		bne $162c51	            BNE DIS_LOOP
+.162c5a	e2 20		sep #$20	                SEP #$20        ; set A short
+.162c5c	60		rts		            RTS
 
 ;******  End of listing
