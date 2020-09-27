@@ -33,6 +33,7 @@
 .include "timer_def.asm"
 .include "math_def.asm"
 .include "interrupt_def.asm"
+.include "sdos_inc.asm"
 
 OPM_BASE_ADDRESS  = $AFF000
 PSG_BASE_ADDRESS  = $AFF100
@@ -72,17 +73,35 @@ DATA_STREAM_TBL   = $8000 ; each entry is 4 bytes
 
 VGM_FILE          = $170000  ; the address to store the VGM data.
 
-* = $162300
+* = $162200
 
 VGM_START
             .as
             .xs
             setas
             setxl
+            PHB
+            PHD
             
-            JSL CLRSCREEN
+            LDA #0
+            XBA
+            LDA #0
+            TCD  ; store 0 in the direct page register
+            PHA
+            PLB  ; store 0 in the bank register
             
-            JSR LOAD_PGX_FILE
+            STA COMMAND
+            ; set the base address for messages
+            LDA #`RESET_MSG
+            STA MSG_PTR+2
+            ; set the display offset - reuse the kernels start address
+            LDX $17
+            STX DISPLAY_OFFSET
+            
+            ; detect if a file was provided in the BRUN command
+            JSR LOAD_VGM_FILE
+            LDA COMMAND ; if the command is still 0, it's a vgm file
+            BNE VGM_DONE
             
             ; disable the cursor
             LDA #0
@@ -90,12 +109,6 @@ VGM_START
             
             LDX #0
             STX DATA_STREAM_CNT
-            
-            LDX #$A000
-            STX DISPLAY_OFFSET
-            
-            LDA #`RESET_MSG
-            STA MSG_PTR+2
             
             ; load the music
             LDA #`VGM_FILE
@@ -132,9 +145,9 @@ VGM_START
             
             JSR VGM_WRITE_REGISTER  ; the initial load of register should set the timerA
             CLI
-            ; loop, waiting for interrupts
-        LOOP
-            BRA LOOP
+            
+            ; return control to the kernel
+            RTL
             
         INVALID_FILE
             setal
@@ -142,19 +155,25 @@ VGM_START
             STA MSG_PTR
             setas
             JSR DISPLAY_MSG
-            
+        VGM_DONE
+            PLD
+            PLB
             RTL
             
-RESET_MSG        .text 'Restarting song:',0
-LOOPING_MSG      .text 'Looping song:',0
-DATA_BLOCK_MSG   .text 'Reading Data Block:',0
-INVALID_FILE_MSG .text 'Invalid file type:', 0
-UNK_CMD1_MSG     .text 'Unknown 1-Byte Command:',0
-UNK_CMD2_MSG     .text 'Unknown 2-Byte Command:',0
-UNK_CMD3_MSG     .text 'Unknown 3-Byte Command:',0
-UNK_CMD4_MSG     .text 'Unknown 4-Byte Command:',0
-HEX_VALUES       .text '0123456789ABCDEF'
-GD3_ERR_MSG      .text 'Couldn''t read Gd3 Info', 0
+RESET_MSG               .text 'Restarting song:',0
+LOOPING_MSG             .text 'Looping song:',0
+DATA_BLOCK_MSG          .text 'Reading Data Block:',0
+INVALID_FILE_MSG        .text 'Invalid file type:', 0
+UNK_CMD1_MSG            .text 'Unknown 1-Byte Command:',0
+UNK_CMD2_MSG            .text 'Unknown 2-Byte Command:',0
+UNK_CMD3_MSG            .text 'Unknown 3-Byte Command:',0
+UNK_CMD4_MSG            .text 'Unknown 4-Byte Command:',0
+HEX_VALUES              .text '0123456789ABCDEF'
+GD3_ERR_MSG             .text 'Couldn''t read Gd3 Info', 0
+LOADING_VGM_FILE_MSG    .text 'VGM Player loading file', 0
+BRUN_CMD_ERROR_MSG      .text 'BRUN does not have a file to load.', 0
+ 
+DOS_REC_PTR      .dstruct FILEDESC
 
 ; *******************************************************************
 ; * First three bytes of the file must be VGM
@@ -189,15 +208,78 @@ CHECK_VGM_FILE
             STA COMMAND
             RTS
             
-LOAD_PGX_FILE
+LOAD_VGM_FILE
             .as
             .xl
-            LDX #0
+            
+            setdp <>DOS_RUN_PARAM
+            .as
+            LDY #0
+            
     FS_LOOP
-            LDA [DOS_RUN_PARAM],X
-            INX
-            CMP #' '
+            LDA [DOS_RUN_PARAM],Y
+            INY
+            CPY #$20 ; expect the vgm command to be less than 32 characters
+            BGE LF_ERROR
+            
+            CMP #' '  ; seek the space character in the BRUN command
             BNE FS_LOOP
+            PHY
+            PHD
+            setdp 0
+            .as
+            ; display a message to the user that we're loading a file
+            LDY #<>LOADING_VGM_FILE_MSG
+            STY MSG_PTR
+            JSR DISPLAY_MSG
+            PLD
+            PLY
+            BRA LF_GOOD
+            
+    LF_ERROR
+            setdp 0
+            .as
+            LDY #<>BRUN_CMD_ERROR_MSG
+            STY MSG_PTR
+            JSR DISPLAY_MSG
+            LDA #1
+            STA COMMAND
+            RTS
+            
+    LF_GOOD
+            
+            setal
+            TYA
+            CLC
+            ADC DOS_RUN_PARAM
+            STA DOS_REC_PTR.PATH
+            LDA DOS_RUN_PARAM + 2
+            STA DOS_REC_PTR.PATH + 2
+            LDA #<>VGM_FILE
+            STA DOS_DST_PTR
+            LDA #`VGM_FILE
+            STA DOS_DST_PTR + 2
+            
+            ; write the address of the file descriptor
+            LDA #<>DOS_REC_PTR
+            STA DOS_FD_PTR
+            LDA #`DOS_REC_PTR
+            STA DOS_FD_PTR + 2
+            
+            ; write the address of our buffer
+            LDA #<>VGM_START - 512
+            STA DOS_REC_PTR.BUFFER
+            LDA #`(VGM_START - 512)
+            STA DOS_REC_PTR.BUFFER + 2
+            
+            setas
+
+            LDA #0
+            STA DOS_REC_PTR.STATUS
+            LDA #BIOS_DEV_SD
+            STA DOS_REC_PTR.DEV
+            JSL F_LOAD
+            setdp 0
             
             RTS
             
@@ -1034,7 +1116,7 @@ VGM_SET_SONG_POINTERS
             INY
             INY
             LDA [SONG_START],Y
-            ADC #GD3_OFFSET + 2
+            ADC SONG_START + 2
             STA GD3_POSITION + 2
             
             setas
@@ -1055,10 +1137,16 @@ VGM_SET_SONG_POINTERS
             
 VGM_SET_LOOP_POINTERS
             .as
+            PHD
+            PHB
+            LDA #0
+            PHA
+            PLB
             
             ; add the start offset
             setal
             LDA #0
+            TCD  ; reset the direct page.
             STA WAIT_CNTR
             
             
@@ -1111,7 +1199,8 @@ VGM_SET_LOOP_POINTERS
             INC CURRENT_POSITION + 2
     VSL_DONE
             setas
-            
+            PLB
+            PLD
             RTS
 
 VGM_INIT_TIMER0
@@ -1120,11 +1209,12 @@ VGM_INIT_TIMER0
             ; set the timer 0 interrupt to the VGM_WRITE_REGISTER address
             setal
             LDA #<>VGM_WRITE_REGISTER
-            STA TIMER0INTSUB
-            LDA #`VGM_WRITE_REGISTER
-            AND #$FF 
             STA TIMER0INTSUB + 1
             setas
+            
+            ; don't write double-bytes, as it will overwrite the JUMP command
+            LDA #`VGM_WRITE_REGISTER
+            STA TIMER0INTSUB + 3
             
             LDA #$30
             STA TIMER0_CMP_L
