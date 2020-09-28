@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.54.1900 listing file
 ; 64tass.exe --long-address -x --intel-hex -o vgm-player.hex --list vgm-player.lst vgm-player.asm
-; Sat Sep 26 23:33:05 2020
+; Sun Sep 27 15:37:01 2020
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -574,1312 +574,1313 @@
 =$8000					DATA_STREAM_TBL   = $8000 ; each entry is 4 bytes
 =$170000				VGM_FILE          = $170000  ; the address to store the VGM data.
 .162200					VGM_START
-.162200	e2 20		sep #$20	                SEP #$20        ; set A short
-.162202	c2 10		rep #$10	                REP #$10        ; set X long
-.162204	8b		phb		            PHB
-.162205	0b		phd		            PHD
-.162206	a9 00		lda #$00	            LDA #0
-.162208	eb		xba		            XBA
-.162209	a9 00		lda #$00	            LDA #0
-.16220b	5b		tcd		            TCD  ; store 0 in the direct page register
-.16220c	48		pha		            PHA
-.16220d	ab		plb		            PLB  ; store 0 in the bank register
-.16220e	85 7f		sta $7f		            STA COMMAND
-.162210	a9 16		lda #$16	            LDA #`RESET_MSG
-.162212	85 7c		sta $7c		            STA MSG_PTR+2
-.162214	a6 17		ldx $17		            LDX $17
-.162216	86 78		stx $78		            STX DISPLAY_OFFSET
-.162218	20 d0 23	jsr $1623d0	            JSR LOAD_VGM_FILE
-.16221b	a5 7f		lda $7f		            LDA COMMAND ; if the command is still 0, it's a vgm file
-.16221d	d0 61		bne $162280	            BNE VGM_DONE
-.16221f	a9 00		lda #$00	            LDA #0
-.162221	8f 10 00 af	sta $af0010	            STA VKY_TXT_CURSOR_CTRL_REG
-.162225	a2 00 00	ldx #$0000	            LDX #0
-.162228	86 7d		stx $7d		            STX DATA_STREAM_CNT
-.16222a	a9 17		lda #$17	            LDA #`VGM_FILE
-.16222c	85 86		sta $86		            STA CURRENT_POSITION + 2
-.16222e	85 82		sta $82		            STA SONG_START + 2
-.162230	a2 00 00	ldx #$0000	            LDX #<>VGM_FILE
-.162233	86 80		stx $80		            STX SONG_START
-.162235	a9 00		lda #$00	            LDA #0
-.162237	85 7f		sta $7f		            STA COMMAND
-.162239	20 ab 23	jsr $1623ab	            JSR CHECK_VGM_FILE
-.16223c	a5 7f		lda $7f		            LDA COMMAND ; if the command is still 0, it's a vgm file
-.16223e	d0 34		bne $162274	            BNE INVALID_FILE
-.162240	20 36 2a	jsr $162a36	            JSR VGM_SET_SONG_POINTERS
-.162243	20 cf 2b	jsr $162bcf	            JSR VGM_DISPLAY_GD3
-.162246	20 fb 2a	jsr $162afb	            JSR VGM_INIT_TIMER0
-.162249	a9 ff		lda #$ff	            LDA #$FF
-.16224b	8f 48 01 00	sta $000148	            STA @lINT_EDGE_REG0
-.16224f	8f 49 01 00	sta $000149	            STA @lINT_EDGE_REG1
-.162253	8f 4a 01 00	sta $00014a	            STA @lINT_EDGE_REG2
-.162257	8f 4b 01 00	sta $00014b	            STA @lINT_EDGE_REG3
-.16225b	a9 fb		lda #$fb	            LDA #~( FNX0_INT02_TMR0 ) ; | FNX0_INT00_SOF) ; uncomment this to debug in the IDE
-.16225d	8f 4c 01 00	sta $00014c	            STA @lINT_MASK_REG0
-.162261	a9 ff		lda #$ff	            LDA #$FF
-.162263	8f 4d 01 00	sta $00014d	            STA @lINT_MASK_REG1
-.162267	8f 4e 01 00	sta $00014e	            STA @lINT_MASK_REG2
-.16226b	8f 4f 01 00	sta $00014f	            STA @lINT_MASK_REG3
-.16226f	20 dd 24	jsr $1624dd	            JSR VGM_WRITE_REGISTER  ; the initial load of register should set the timerA
-.162272	58		cli		            CLI
-.162273	6b		rtl		            RTL
-.162274					        INVALID_FILE
-.162274	c2 20		rep #$20	                REP #$20        ; set A long
-.162276	a9 b6 22	lda #$22b6	            LDA #<>INVALID_FILE_MSG
-.162279	85 7a		sta $7a		            STA MSG_PTR
-.16227b	e2 20		sep #$20	                SEP #$20        ; set A short
-.16227d	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
-.162280					        VGM_DONE
-.162280	2b		pld		            PLD
-.162281	ab		plb		            PLB
-.162282	6b		rtl		            RTL
->162283	52 65 73 74 61 72 74 69		RESET_MSG               .text 'Restarting song:',0
->16228b	6e 67 20 73 6f 6e 67 3a 00
->162294	4c 6f 6f 70 69 6e 67 20		LOOPING_MSG             .text 'Looping song:',0
->16229c	73 6f 6e 67 3a 00
->1622a2	52 65 61 64 69 6e 67 20		DATA_BLOCK_MSG          .text 'Reading Data Block:',0
->1622aa	44 61 74 61 20 42 6c 6f 63 6b 3a 00
->1622b6	49 6e 76 61 6c 69 64 20		INVALID_FILE_MSG        .text 'Invalid file type:', 0
->1622be	66 69 6c 65 20 74 79 70 65 3a 00
->1622c9	55 6e 6b 6e 6f 77 6e 20		UNK_CMD1_MSG            .text 'Unknown 1-Byte Command:',0
->1622d1	31 2d 42 79 74 65 20 43 6f 6d 6d 61 6e 64 3a 00
->1622e1	55 6e 6b 6e 6f 77 6e 20		UNK_CMD2_MSG            .text 'Unknown 2-Byte Command:',0
->1622e9	32 2d 42 79 74 65 20 43 6f 6d 6d 61 6e 64 3a 00
->1622f9	55 6e 6b 6e 6f 77 6e 20		UNK_CMD3_MSG            .text 'Unknown 3-Byte Command:',0
->162301	33 2d 42 79 74 65 20 43 6f 6d 6d 61 6e 64 3a 00
->162311	55 6e 6b 6e 6f 77 6e 20		UNK_CMD4_MSG            .text 'Unknown 4-Byte Command:',0
->162319	34 2d 42 79 74 65 20 43 6f 6d 6d 61 6e 64 3a 00
->162329	30 31 32 33 34 35 36 37		HEX_VALUES              .text '0123456789ABCDEF'
->162331	38 39 41 42 43 44 45 46
->162339	43 6f 75 6c 64 6e 27 74		GD3_ERR_MSG             .text 'Couldn''t read Gd3 Info', 0
->162341	20 72 65 61 64 20 47 64 33 20 49 6e 66 6f 00
->162350	56 47 4d 20 50 6c 61 79		LOADING_VGM_FILE_MSG    .text 'VGM Player loading file', 0
->162358	65 72 20 6c 6f 61 64 69 6e 67 20 66 69 6c 65 00
->162368	42 52 55 4e 20 64 6f 65		BRUN_CMD_ERROR_MSG      .text 'BRUN does not have a file to load.', 0
->162370	73 20 6e 6f 74 20 68 61 76 65 20 61 20 66 69 6c
->162380	65 20 74 6f 20 6c 6f 61 64 2e 00
-.16238b					DOS_REC_PTR
->16238b					STATUS              .byte ?             ; The status flags of the file descriptor (open, closed, error, EOF, etc.)
->16238c					DEV                 .byte ?             ; The ID of the device holding the file
->16238d					PATH                .dword ?            ; Pointer to a NULL terminated path string
->162391					CLUSTER             .dword ?            ; The current cluster of the file.
->162395					FIRST_CLUSTER       .dword ?            ; The ID of the first cluster in the file
->162399					BUFFER              .dword ?            ; Pointer to a cluster-sized buffer
->16239d					SIZE                .dword ?            ; The size of the file
->1623a1					CREATE_DATE         .word ?             ; The creation date of the file
->1623a3					CREATE_TIME         .word ?             ; The creation time of the file
->1623a5					MODIFIED_DATE       .word ?             ; The modification date of the file
->1623a7					MODIFIED_TIME       .word ?             ; The modification time of the file
->1623a9					RESERVED            .word ?             ; Two reserved bytes to bring the descriptor up to 32 bytes
-.1623ab					CHECK_VGM_FILE
-.1623ab	a0 00 00	ldy #$0000	            LDY #0
-.1623ae	b7 80		lda [$80],y	            LDA [SONG_START],Y
-.1623b0	c8		iny		            INY
-.1623b1	c9 56		cmp #$56	            CMP #'V'
-.1623b3	d0 16		bne $1623cb	            BNE CHECK_FAILED
-.1623b5	b7 80		lda [$80],y	            LDA [SONG_START],Y
-.1623b7	c8		iny		            INY
-.1623b8	c9 67		cmp #$67	            CMP #'g'
-.1623ba	d0 0f		bne $1623cb	            BNE CHECK_FAILED
-.1623bc	b7 80		lda [$80],y	            LDA [SONG_START],Y
-.1623be	c8		iny		            INY
-.1623bf	c9 6d		cmp #$6d	            CMP #'m'
-.1623c1	d0 08		bne $1623cb	            BNE CHECK_FAILED
-.1623c3	a0 08 00	ldy #$0008	            LDY #8
+.162200	08		php		            PHP
+.162201	e2 20		sep #$20	                SEP #$20        ; set A short
+.162203	c2 10		rep #$10	                REP #$10        ; set X long
+.162205	8b		phb		            PHB
+.162206	0b		phd		            PHD
+.162207	a9 00		lda #$00	            LDA #0
+.162209	eb		xba		            XBA
+.16220a	a9 00		lda #$00	            LDA #0
+.16220c	5b		tcd		            TCD  ; store 0 in the direct page register
+.16220d	48		pha		            PHA
+.16220e	ab		plb		            PLB  ; store 0 in the bank register
+.16220f	85 7f		sta $7f		            STA COMMAND
+.162211	a9 16		lda #$16	            LDA #`RESET_MSG
+.162213	85 7c		sta $7c		            STA MSG_PTR+2
+.162215	a6 17		ldx $17		            LDX $17
+.162217	86 78		stx $78		            STX DISPLAY_OFFSET
+.162219	20 da 23	jsr $1623da	            JSR LOAD_VGM_FILE
+.16221c	a5 7f		lda $7f		            LDA COMMAND ; if the command is still 0, it's a vgm file
+.16221e	d0 45		bne $162265	            BNE VGM_DONE
+.162220	a9 00		lda #$00	            LDA #0
+.162222	8f 10 00 af	sta $af0010	            STA VKY_TXT_CURSOR_CTRL_REG
+.162226	a2 00 00	ldx #$0000	            LDX #0
+.162229	86 7d		stx $7d		            STX DATA_STREAM_CNT
+.16222b	a9 17		lda #$17	            LDA #`VGM_FILE
+.16222d	85 86		sta $86		            STA CURRENT_POSITION + 2
+.16222f	85 82		sta $82		            STA SONG_START + 2
+.162231	a2 00 00	ldx #$0000	            LDX #<>VGM_FILE
+.162234	86 80		stx $80		            STX SONG_START
+.162236	a9 00		lda #$00	            LDA #0
+.162238	85 7f		sta $7f		            STA COMMAND
+.16223a	20 b5 23	jsr $1623b5	            JSR CHECK_VGM_FILE
+.16223d	a5 7f		lda $7f		            LDA COMMAND ; if the command is still 0, it's a vgm file
+.16223f	d0 18		bne $162259	            BNE INVALID_FILE
+.162241	20 42 2a	jsr $162a42	            JSR VGM_SET_SONG_POINTERS
+.162244	20 db 2b	jsr $162bdb	            JSR VGM_DISPLAY_GD3
+.162247	20 07 2b	jsr $162b07	            JSR VGM_INIT_TIMER0
+.16224a	ad 4c 01	lda $014c	            LDA INT_MASK_REG0
+.16224d	29 fb		and #$fb	            AND #~( FNX0_INT02_TMR0 ) ; | FNX0_INT00_SOF) ; uncomment this to debug in the IDE
+.16224f	8d 4c 01	sta $014c	            STA INT_MASK_REG0
+.162252	22 e9 24 16	jsl $1624e9	            JSL VGM_WRITE_REGISTER  ; the initial load of register should set the timerA
+.162256	58		cli		            CLI
+.162257	80 0c		bra $162265	            BRA VGM_DONE
+.162259					        INVALID_FILE
+.162259	c2 20		rep #$20	                REP #$20        ; set A long
+.16225b	a9 a4 22	lda #$22a4	            LDA #<>INVALID_FILE_MSG
+.16225e	85 7a		sta $7a		            STA MSG_PTR
+.162260	e2 20		sep #$20	                SEP #$20        ; set A short
+.162262	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.162265					        VGM_DONE
+.162265	a0 79 23	ldy #$2379	            LDY #<>KERNEL_RETURN_MSG
+.162268	84 7a		sty $7a		            STY MSG_PTR
+.16226a	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.16226d	2b		pld		            PLD
+.16226e	ab		plb		            PLB
+.16226f	28		plp		            PLP
+.162270	6b		rtl		            RTL
+>162271	52 65 73 74 61 72 74 69		RESET_MSG               .text 'Restarting song:',0
+>162279	6e 67 20 73 6f 6e 67 3a 00
+>162282	4c 6f 6f 70 69 6e 67 20		LOOPING_MSG             .text 'Looping song:',0
+>16228a	73 6f 6e 67 3a 00
+>162290	52 65 61 64 69 6e 67 20		DATA_BLOCK_MSG          .text 'Reading Data Block:',0
+>162298	44 61 74 61 20 42 6c 6f 63 6b 3a 00
+>1622a4	49 6e 76 61 6c 69 64 20		INVALID_FILE_MSG        .text 'Invalid file type:', 0
+>1622ac	66 69 6c 65 20 74 79 70 65 3a 00
+>1622b7	55 6e 6b 6e 6f 77 6e 20		UNK_CMD1_MSG            .text 'Unknown 1-Byte Command:',0
+>1622bf	31 2d 42 79 74 65 20 43 6f 6d 6d 61 6e 64 3a 00
+>1622cf	55 6e 6b 6e 6f 77 6e 20		UNK_CMD2_MSG            .text 'Unknown 2-Byte Command:',0
+>1622d7	32 2d 42 79 74 65 20 43 6f 6d 6d 61 6e 64 3a 00
+>1622e7	55 6e 6b 6e 6f 77 6e 20		UNK_CMD3_MSG            .text 'Unknown 3-Byte Command:',0
+>1622ef	33 2d 42 79 74 65 20 43 6f 6d 6d 61 6e 64 3a 00
+>1622ff	55 6e 6b 6e 6f 77 6e 20		UNK_CMD4_MSG            .text 'Unknown 4-Byte Command:',0
+>162307	34 2d 42 79 74 65 20 43 6f 6d 6d 61 6e 64 3a 00
+>162317	30 31 32 33 34 35 36 37		HEX_VALUES              .text '0123456789ABCDEF'
+>16231f	38 39 41 42 43 44 45 46
+>162327	43 6f 75 6c 64 6e 27 74		GD3_ERR_MSG             .text 'Couldn''t read Gd3 Info', 0
+>16232f	20 72 65 61 64 20 47 64 33 20 49 6e 66 6f 00
+>16233e	56 47 4d 20 50 6c 61 79		LOADING_VGM_FILE_MSG    .text 'VGM Player loading file', 0
+>162346	65 72 20 6c 6f 61 64 69 6e 67 20 66 69 6c 65 00
+>162356	42 52 55 4e 20 64 6f 65		BRUN_CMD_ERROR_MSG      .text 'BRUN does not have a file to load.', 0
+>16235e	73 20 6e 6f 74 20 68 61 76 65 20 61 20 66 69 6c
+>16236e	65 20 74 6f 20 6c 6f 61 64 2e 00
+>162379	52 65 74 75 72 6e 69 6e		KERNEL_RETURN_MSG       .text 'Returning control to kernel', 0
+>162381	67 20 63 6f 6e 74 72 6f 6c 20 74 6f 20 6b 65 72
+>162391	6e 65 6c 00
+.162395					DOS_REC_PTR
+>162395					STATUS              .byte ?             ; The status flags of the file descriptor (open, closed, error, EOF, etc.)
+>162396					DEV                 .byte ?             ; The ID of the device holding the file
+>162397					PATH                .dword ?            ; Pointer to a NULL terminated path string
+>16239b					CLUSTER             .dword ?            ; The current cluster of the file.
+>16239f					FIRST_CLUSTER       .dword ?            ; The ID of the first cluster in the file
+>1623a3					BUFFER              .dword ?            ; Pointer to a cluster-sized buffer
+>1623a7					SIZE                .dword ?            ; The size of the file
+>1623ab					CREATE_DATE         .word ?             ; The creation date of the file
+>1623ad					CREATE_TIME         .word ?             ; The creation time of the file
+>1623af					MODIFIED_DATE       .word ?             ; The modification date of the file
+>1623b1					MODIFIED_TIME       .word ?             ; The modification time of the file
+>1623b3					RESERVED            .word ?             ; Two reserved bytes to bring the descriptor up to 32 bytes
+.1623b5					CHECK_VGM_FILE
+.1623b5	a0 00 00	ldy #$0000	            LDY #0
+.1623b8	b7 80		lda [$80],y	            LDA [SONG_START],Y
+.1623ba	c8		iny		            INY
+.1623bb	c9 56		cmp #$56	            CMP #'V'
+.1623bd	d0 16		bne $1623d5	            BNE CHECK_FAILED
+.1623bf	b7 80		lda [$80],y	            LDA [SONG_START],Y
+.1623c1	c8		iny		            INY
+.1623c2	c9 67		cmp #$67	            CMP #'g'
+.1623c4	d0 0f		bne $1623d5	            BNE CHECK_FAILED
 .1623c6	b7 80		lda [$80],y	            LDA [SONG_START],Y
-.1623c8	85 77		sta $77		            STA MIN_VERSION
-.1623ca	60		rts		            RTS
-.1623cb					    CHECK_FAILED
-.1623cb	a9 01		lda #$01	            LDA #1
-.1623cd	85 7f		sta $7f		            STA COMMAND
-.1623cf	60		rts		            RTS
-.1623d0					LOAD_VGM_FILE
-.1623d0	48		pha		                PHA             ; begin setdp macro
-.1623d1	08		php		                PHP
-.1623d2	c2 20		rep #$20	                REP #$20        ; set A long
-.1623d4	a9 60 03	lda #$0360	                LDA #<>DOS_RUN_PARAM         ; set DP to page 0
-.1623d7	5b		tcd		                TCD
-.1623d8	28		plp		                PLP
-.1623d9	68		pla		                PLA             ; end setdp macro
-.1623da	a0 00 00	ldy #$0000	            LDY #0
-.1623dd					    FS_LOOP
-.1623dd	b7 00		lda [$0360],y	            LDA [DOS_RUN_PARAM],Y
-.1623df	c8		iny		            INY
-.1623e0	c0 20 00	cpy #$0020	            CPY #$20 ; expect the vgm command to be less than 32 characters
-.1623e3	b0 1c		bcs $162401	            BGE LF_ERROR
-.1623e5	c9 20		cmp #$20	            CMP #' '  ; seek the space character in the BRUN command
-.1623e7	d0 f4		bne $1623dd	            BNE FS_LOOP
-.1623e9	5a		phy		            PHY
-.1623ea	0b		phd		            PHD
-.1623eb	48		pha		                PHA             ; begin setdp macro
-.1623ec	08		php		                PHP
-.1623ed	c2 20		rep #$20	                REP #$20        ; set A long
-.1623ef	a9 00 00	lda #$0000	                LDA #0         ; set DP to page 0
-.1623f2	5b		tcd		                TCD
-.1623f3	28		plp		                PLP
-.1623f4	68		pla		                PLA             ; end setdp macro
-.1623f5	a0 50 23	ldy #$2350	            LDY #<>LOADING_VGM_FILE_MSG
-.1623f8	84 7a		sty $7a		            STY MSG_PTR
-.1623fa	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
-.1623fd	2b		pld		            PLD
-.1623fe	7a		ply		            PLY
-.1623ff	80 17		bra $162418	            BRA LF_GOOD
-.162401					    LF_ERROR
-.162401	48		pha		                PHA             ; begin setdp macro
-.162402	08		php		                PHP
-.162403	c2 20		rep #$20	                REP #$20        ; set A long
-.162405	a9 00 00	lda #$0000	                LDA #0         ; set DP to page 0
-.162408	5b		tcd		                TCD
-.162409	28		plp		                PLP
-.16240a	68		pla		                PLA             ; end setdp macro
-.16240b	a0 68 23	ldy #$2368	            LDY #<>BRUN_CMD_ERROR_MSG
-.16240e	84 7a		sty $7a		            STY MSG_PTR
-.162410	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
-.162413	a9 01		lda #$01	            LDA #1
-.162415	85 7f		sta $7f		            STA COMMAND
-.162417	60		rts		            RTS
-.162418					    LF_GOOD
-.162418	c2 20		rep #$20	                REP #$20        ; set A long
-.16241a	98		tya		            TYA
-.16241b	18		clc		            CLC
-.16241c	6d 60 03	adc $0360	            ADC DOS_RUN_PARAM
-.16241f	8f 8d 23 16	sta $16238d	            STA DOS_REC_PTR.PATH
-.162423	ad 62 03	lda $0362	            LDA DOS_RUN_PARAM + 2
-.162426	8f 8f 23 16	sta $16238f	            STA DOS_REC_PTR.PATH + 2
-.16242a	a9 00 00	lda #$0000	            LDA #<>VGM_FILE
-.16242d	8d 54 03	sta $0354	            STA DOS_DST_PTR
-.162430	a9 17 00	lda #$0017	            LDA #`VGM_FILE
-.162433	8d 56 03	sta $0356	            STA DOS_DST_PTR + 2
-.162436	a9 8b 23	lda #$238b	            LDA #<>DOS_REC_PTR
-.162439	8d 40 03	sta $0340	            STA DOS_FD_PTR
-.16243c	a9 16 00	lda #$0016	            LDA #`DOS_REC_PTR
-.16243f	8d 42 03	sta $0342	            STA DOS_FD_PTR + 2
-.162442	a9 00 20	lda #$2000	            LDA #<>VGM_START - 512
-.162445	8f 99 23 16	sta $162399	            STA DOS_REC_PTR.BUFFER
-.162449	a9 16 00	lda #$0016	            LDA #`(VGM_START - 512)
-.16244c	8f 9b 23 16	sta $16239b	            STA DOS_REC_PTR.BUFFER + 2
-.162450	e2 20		sep #$20	                SEP #$20        ; set A short
-.162452	a9 00		lda #$00	            LDA #0
-.162454	8f 8b 23 16	sta $16238b	            STA DOS_REC_PTR.STATUS
-.162458	a9 02		lda #$02	            LDA #BIOS_DEV_SD
-.16245a	8f 8c 23 16	sta $16238c	            STA DOS_REC_PTR.DEV
-.16245e	22 18 11 00	jsl $001118	            JSL F_LOAD
-.162462	48		pha		                PHA             ; begin setdp macro
-.162463	08		php		                PHP
-.162464	c2 20		rep #$20	                REP #$20        ; set A long
-.162466	a9 00 00	lda #$0000	                LDA #0         ; set DP to page 0
-.162469	5b		tcd		                TCD
-.16246a	28		plp		                PLP
-.16246b	68		pla		                PLA             ; end setdp macro
-.16246c	60		rts		            RTS
-.16246d					DISPLAY_MSG
-.16246d	5a		phy		            PHY
-.16246e	a6 78		ldx $78		            LDX DISPLAY_OFFSET
-.162470	a0 00 00	ldy #$0000	            LDY #0
-.162473	a9 00		lda #$00	            LDA #0
-.162475	eb		xba		            XBA
-.162476					    DISPLAY_NEXT
-.162476	a9 2d		lda #$2d	            LDA #$2D   ; Text color
-.162478	9f 00 20 af	sta $af2000,x	            STA $AF2000,X  ; offset to Text LUT $AF:C000
-.16247c	b7 7a		lda [$7a],y	            LDA [MSG_PTR],Y
-.16247e	9f 00 00 af	sta $af0000,x	            STA $AF0000,X  ; offset to Text $AF:A000
-.162482	e8		inx		            INX
-.162483	c8		iny		            INY
-.162484	c9 00		cmp #$00	            CMP #0
-.162486	d0 ee		bne $162476	            BNE DISPLAY_NEXT
-.162488	a9 2d		lda #$2d	            LDA #$2D
-.16248a	9f 00 20 af	sta $af2000,x	            STA $AF2000,X
-.16248e	a5 7f		lda $7f		            LDA COMMAND
-.162490	29 f0		and #$f0	            AND #$F0
-.162492	4a		lsr a		            LSR A
-.162493	4a		lsr a		            LSR A
-.162494	4a		lsr a		            LSR A
-.162495	4a		lsr a		            LSR A
-.162496	9b		txy		            TXY
-.162497	aa		tax		            TAX
-.162498	bf 29 23 16	lda $162329,x	            LDA HEX_VALUES,X
-.16249c	bb		tyx		            TYX
-.16249d	9f 00 00 af	sta $af0000,x	            STA $AF0000,X
-.1624a1	e8		inx		            INX
-.1624a2	a9 2d		lda #$2d	            LDA #$2D
-.1624a4	9f 00 20 af	sta $af2000,x	            STA $AF2000,X
-.1624a8	a5 7f		lda $7f		            LDA COMMAND
-.1624aa	29 0f		and #$0f	            AND #$F
-.1624ac	9b		txy		            TXY
-.1624ad	aa		tax		            TAX
-.1624ae	bf 29 23 16	lda $162329,x	            LDA HEX_VALUES,X
-.1624b2	bb		tyx		            TYX
-.1624b3	9f 00 00 af	sta $af0000,x	            STA $AF0000,X
-.1624b7	c2 20		rep #$20	                REP #$20        ; set A long
-.1624b9	a5 78		lda $78		            LDA DISPLAY_OFFSET
-.1624bb	18		clc		            CLC
-.1624bc	69 50 00	adc #$0050	            ADC #80 ; 80 columns in 640x480 mode
-.1624bf	85 78		sta $78		            STA DISPLAY_OFFSET
-.1624c1	e2 20		sep #$20	                SEP #$20        ; set A short
-.1624c3	eb		xba		            XBA
-.1624c4	c9 b1		cmp #$b1	            CMP #$B1 ; 80 COLS * 56 ROWS = $1180  - SO $11 + A0 = $B1
-.1624c6	90 13		bcc $1624db	            BLT DISPLAY_DONE
-.1624c8	eb		xba		            XBA
-.1624c9	d0 07		bne $1624d2	            BNE FIRST_COL
-.1624cb	a2 28 a0	ldx #$a028	            LDX #$A000 + 40 ; create a second column
-.1624ce	86 78		stx $78		            STX DISPLAY_OFFSET
-.1624d0	80 09		bra $1624db	            BRA DISPLAY_DONE
-.1624d2					        FIRST_COL
-.1624d2	a2 00 a0	ldx #$a000	            LDX #$A000
-.1624d5	86 78		stx $78		            STX DISPLAY_OFFSET
-.1624d7	22 a8 10 00	jsl $0010a8	            JSL CLRSCREEN
-.1624db					    DISPLAY_DONE
-.1624db	7a		ply		            PLY
-.1624dc	60		rts		            RTS
-.1624dd					VGM_WRITE_REGISTER
-.1624dd	a6 88		ldx $88		            LDX WAIT_CNTR
-.1624df	e0 00 00	cpx #$0000	            CPX #0
-.1624e2	f0 04		beq $1624e8	            BEQ READ_COMMAND
-.1624e4	ca		dex		            DEX
-.1624e5	86 88		stx $88		            STX WAIT_CNTR
-.1624e7	60		rts		            RTS
-.1624e8					    READ_COMMAND
-.1624e8	a9 00		lda #$00	            LDA #0
-.1624ea	eb		xba		            XBA
-.1624eb	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.1624ed	85 7f		sta $7f		            STA COMMAND
-.1624ef	c2 20		rep #$20	                REP #$20        ; set A long
-.1624f1	e6 84		inc $84		            INC CURRENT_POSITION
-.1624f3	d0 02		bne $1624f7	            BNE increment_done
-.1624f5	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1624f7					    increment_done
-.1624f7	e2 20		sep #$20	                SEP #$20        ; set A short
-.1624f9	29 f0		and #$f0	            AND #$F0
-.1624fb	4a		lsr a		            LSR A
-.1624fc	4a		lsr a		            LSR A
-.1624fd	4a		lsr a		            LSR A
-.1624fe	aa		tax		            TAX
-.1624ff	7c 03 25	jmp ($162503,x)	            JMP (VGM_COMMAND_TABLE,X)
-.162502					    VGM_LOOP_DONE
-.162502	60		rts		            RTS
-.162503					VGM_COMMAND_TABLE
->162503	23 25				            .word <>INVALID_COMMAND ;0
->162505	23 25				            .word <>INVALID_COMMAND ;1
->162507	23 25				            .word <>INVALID_COMMAND ;2
->162509	26 25				            .word <>SKIP_BYTE_CMD   ;3 - reserved - not implemented
->16250b	26 25				            .word <>SKIP_BYTE_CMD   ;4 - not implemented
->16250d	b9 27				            .word <>WRITE_YM_CMD    ;5 - YM*
->16250f	b0 29				            .word <>WAIT_COMMANDS   ;6
->162511	02 2a				            .word <>WAIT_N_1        ;7
->162513	10 2a				            .word <>YM2612_SAMPLE   ;8
->162515	33 2a				            .word <>DAC_STREAM      ;9
->162517	07 26				            .word <>AY8910          ;A - AY8910
->162519	3f 25				            .word <>SKIP_TWO_BYTES  ;B - not implemented
->16251b	5e 25				            .word <>SKIP_THREE_BYTES;C - not implemented
->16251d	5e 25				            .word <>SKIP_THREE_BYTES;D - not implemented
->16251f	83 25				            .word <>SEEK_OFFSET     ;E - not implemented
->162521	dc 25				            .word <>SKIP_FOUR_BYTES ;F - not implemented
-.162523					INVALID_COMMAND
-.162523	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162526					SKIP_BYTE_CMD
-.162526	c2 20		rep #$20	                REP #$20        ; set A long
-.162528	a9 c9 22	lda #$22c9	            LDA #<>UNK_CMD1_MSG
-.16252b	85 7a		sta $7a		            STA MSG_PTR
-.16252d	e2 20		sep #$20	                SEP #$20        ; set A short
-.16252f	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
+.1623c8	c8		iny		            INY
+.1623c9	c9 6d		cmp #$6d	            CMP #'m'
+.1623cb	d0 08		bne $1623d5	            BNE CHECK_FAILED
+.1623cd	a0 08 00	ldy #$0008	            LDY #8
+.1623d0	b7 80		lda [$80],y	            LDA [SONG_START],Y
+.1623d2	85 77		sta $77		            STA MIN_VERSION
+.1623d4	60		rts		            RTS
+.1623d5					    CHECK_FAILED
+.1623d5	a9 01		lda #$01	            LDA #1
+.1623d7	85 7f		sta $7f		            STA COMMAND
+.1623d9	60		rts		            RTS
+.1623da					LOAD_VGM_FILE
+.1623da	48		pha		                PHA             ; begin setdp macro
+.1623db	08		php		                PHP
+.1623dc	c2 20		rep #$20	                REP #$20        ; set A long
+.1623de	a9 60 03	lda #$0360	                LDA #<>DOS_RUN_PARAM         ; set DP to page 0
+.1623e1	5b		tcd		                TCD
+.1623e2	28		plp		                PLP
+.1623e3	68		pla		                PLA             ; end setdp macro
+.1623e4	a0 00 00	ldy #$0000	            LDY #0
+.1623e7					    FS_LOOP
+.1623e7	b7 00		lda [$0360],y	            LDA [DOS_RUN_PARAM],Y
+.1623e9	c8		iny		            INY
+.1623ea	c0 20 00	cpy #$0020	            CPY #$20 ; expect the vgm command to be less than 32 characters
+.1623ed	b0 1c		bcs $16240b	            BGE LF_ERROR
+.1623ef	c9 20		cmp #$20	            CMP #' '  ; seek the space character in the BRUN command
+.1623f1	d0 f4		bne $1623e7	            BNE FS_LOOP
+.1623f3	5a		phy		            PHY
+.1623f4	0b		phd		            PHD
+.1623f5	48		pha		                PHA             ; begin setdp macro
+.1623f6	08		php		                PHP
+.1623f7	c2 20		rep #$20	                REP #$20        ; set A long
+.1623f9	a9 00 00	lda #$0000	                LDA #0         ; set DP to page 0
+.1623fc	5b		tcd		                TCD
+.1623fd	28		plp		                PLP
+.1623fe	68		pla		                PLA             ; end setdp macro
+.1623ff	a0 3e 23	ldy #$233e	            LDY #<>LOADING_VGM_FILE_MSG
+.162402	84 7a		sty $7a		            STY MSG_PTR
+.162404	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.162407	2b		pld		            PLD
+.162408	7a		ply		            PLY
+.162409	80 17		bra $162422	            BRA LF_GOOD
+.16240b					    LF_ERROR
+.16240b	48		pha		                PHA             ; begin setdp macro
+.16240c	08		php		                PHP
+.16240d	c2 20		rep #$20	                REP #$20        ; set A long
+.16240f	a9 00 00	lda #$0000	                LDA #0         ; set DP to page 0
+.162412	5b		tcd		                TCD
+.162413	28		plp		                PLP
+.162414	68		pla		                PLA             ; end setdp macro
+.162415	a0 56 23	ldy #$2356	            LDY #<>BRUN_CMD_ERROR_MSG
+.162418	84 7a		sty $7a		            STY MSG_PTR
+.16241a	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.16241d	a9 01		lda #$01	            LDA #1
+.16241f	85 7f		sta $7f		            STA COMMAND
+.162421	60		rts		            RTS
+.162422					    LF_GOOD
+.162422	c2 20		rep #$20	                REP #$20        ; set A long
+.162424	98		tya		            TYA
+.162425	18		clc		            CLC
+.162426	6d 60 03	adc $0360	            ADC DOS_RUN_PARAM
+.162429	8f 97 23 16	sta $162397	            STA DOS_REC_PTR.PATH
+.16242d	ad 62 03	lda $0362	            LDA DOS_RUN_PARAM + 2
+.162430	8f 99 23 16	sta $162399	            STA DOS_REC_PTR.PATH + 2
+.162434	a9 00 00	lda #$0000	            LDA #<>VGM_FILE
+.162437	8d 54 03	sta $0354	            STA DOS_DST_PTR
+.16243a	a9 17 00	lda #$0017	            LDA #`VGM_FILE
+.16243d	8d 56 03	sta $0356	            STA DOS_DST_PTR + 2
+.162440	a9 95 23	lda #$2395	            LDA #<>DOS_REC_PTR
+.162443	8d 40 03	sta $0340	            STA DOS_FD_PTR
+.162446	a9 16 00	lda #$0016	            LDA #`DOS_REC_PTR
+.162449	8d 42 03	sta $0342	            STA DOS_FD_PTR + 2
+.16244c	a9 00 20	lda #$2000	            LDA #<>VGM_START - 512
+.16244f	8f a3 23 16	sta $1623a3	            STA DOS_REC_PTR.BUFFER
+.162453	a9 16 00	lda #$0016	            LDA #`(VGM_START - 512)
+.162456	8f a5 23 16	sta $1623a5	            STA DOS_REC_PTR.BUFFER + 2
+.16245a	e2 20		sep #$20	                SEP #$20        ; set A short
+.16245c	a9 00		lda #$00	            LDA #0
+.16245e	8f 95 23 16	sta $162395	            STA DOS_REC_PTR.STATUS
+.162462	a9 02		lda #$02	            LDA #BIOS_DEV_SD
+.162464	8f 96 23 16	sta $162396	            STA DOS_REC_PTR.DEV
+.162468	22 18 11 00	jsl $001118	            JSL F_LOAD
+.16246c	90 9d		bcc $16240b	            BCC LF_ERROR
+.16246e	48		pha		                PHA             ; begin setdp macro
+.16246f	08		php		                PHP
+.162470	c2 20		rep #$20	                REP #$20        ; set A long
+.162472	a9 00 00	lda #$0000	                LDA #0         ; set DP to page 0
+.162475	5b		tcd		                TCD
+.162476	28		plp		                PLP
+.162477	68		pla		                PLA             ; end setdp macro
+.162478	60		rts		            RTS
+.162479					DISPLAY_MSG
+.162479	5a		phy		            PHY
+.16247a	a6 78		ldx $78		            LDX DISPLAY_OFFSET
+.16247c	a0 00 00	ldy #$0000	            LDY #0
+.16247f	a9 00		lda #$00	            LDA #0
+.162481	eb		xba		            XBA
+.162482					    DISPLAY_NEXT
+.162482	a9 2d		lda #$2d	            LDA #$2D   ; Text color
+.162484	9f 00 20 af	sta $af2000,x	            STA $AF2000,X  ; offset to Text LUT $AF:C000
+.162488	b7 7a		lda [$7a],y	            LDA [MSG_PTR],Y
+.16248a	9f 00 00 af	sta $af0000,x	            STA $AF0000,X  ; offset to Text $AF:A000
+.16248e	e8		inx		            INX
+.16248f	c8		iny		            INY
+.162490	c9 00		cmp #$00	            CMP #0
+.162492	d0 ee		bne $162482	            BNE DISPLAY_NEXT
+.162494	a9 2d		lda #$2d	            LDA #$2D
+.162496	9f 00 20 af	sta $af2000,x	            STA $AF2000,X
+.16249a	a5 7f		lda $7f		            LDA COMMAND
+.16249c	29 f0		and #$f0	            AND #$F0
+.16249e	4a		lsr a		            LSR A
+.16249f	4a		lsr a		            LSR A
+.1624a0	4a		lsr a		            LSR A
+.1624a1	4a		lsr a		            LSR A
+.1624a2	9b		txy		            TXY
+.1624a3	aa		tax		            TAX
+.1624a4	bf 17 23 16	lda $162317,x	            LDA HEX_VALUES,X
+.1624a8	bb		tyx		            TYX
+.1624a9	9f 00 00 af	sta $af0000,x	            STA $AF0000,X
+.1624ad	e8		inx		            INX
+.1624ae	a9 2d		lda #$2d	            LDA #$2D
+.1624b0	9f 00 20 af	sta $af2000,x	            STA $AF2000,X
+.1624b4	a5 7f		lda $7f		            LDA COMMAND
+.1624b6	29 0f		and #$0f	            AND #$F
+.1624b8	9b		txy		            TXY
+.1624b9	aa		tax		            TAX
+.1624ba	bf 17 23 16	lda $162317,x	            LDA HEX_VALUES,X
+.1624be	bb		tyx		            TYX
+.1624bf	9f 00 00 af	sta $af0000,x	            STA $AF0000,X
+.1624c3	c2 20		rep #$20	                REP #$20        ; set A long
+.1624c5	a5 78		lda $78		            LDA DISPLAY_OFFSET
+.1624c7	18		clc		            CLC
+.1624c8	69 50 00	adc #$0050	            ADC #80 ; 80 columns in 640x480 mode
+.1624cb	85 78		sta $78		            STA DISPLAY_OFFSET
+.1624cd	e2 20		sep #$20	                SEP #$20        ; set A short
+.1624cf	eb		xba		            XBA
+.1624d0	c9 b1		cmp #$b1	            CMP #$B1 ; 80 COLS * 56 ROWS = $1180  - SO $11 + A0 = $B1
+.1624d2	90 13		bcc $1624e7	            BLT DISPLAY_DONE
+.1624d4	eb		xba		            XBA
+.1624d5	d0 07		bne $1624de	            BNE FIRST_COL
+.1624d7	a2 28 a0	ldx #$a028	            LDX #$A000 + 40 ; create a second column
+.1624da	86 78		stx $78		            STX DISPLAY_OFFSET
+.1624dc	80 09		bra $1624e7	            BRA DISPLAY_DONE
+.1624de					        FIRST_COL
+.1624de	a2 00 a0	ldx #$a000	            LDX #$A000
+.1624e1	86 78		stx $78		            STX DISPLAY_OFFSET
+.1624e3	22 a8 10 00	jsl $0010a8	            JSL CLRSCREEN
+.1624e7					    DISPLAY_DONE
+.1624e7	7a		ply		            PLY
+.1624e8	60		rts		            RTS
+.1624e9					VGM_WRITE_REGISTER
+.1624e9	a6 88		ldx $88		            LDX WAIT_CNTR
+.1624eb	e0 00 00	cpx #$0000	            CPX #0
+.1624ee	f0 04		beq $1624f4	            BEQ READ_COMMAND
+.1624f0	ca		dex		            DEX
+.1624f1	86 88		stx $88		            STX WAIT_CNTR
+.1624f3	60		rts		            RTS
+.1624f4					    READ_COMMAND
+.1624f4	a9 00		lda #$00	            LDA #0
+.1624f6	eb		xba		            XBA
+.1624f7	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1624f9	85 7f		sta $7f		            STA COMMAND
+.1624fb	c2 20		rep #$20	                REP #$20        ; set A long
+.1624fd	e6 84		inc $84		            INC CURRENT_POSITION
+.1624ff	d0 02		bne $162503	            BNE increment_done
+.162501	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162503					    increment_done
+.162503	e2 20		sep #$20	                SEP #$20        ; set A short
+.162505	29 f0		and #$f0	            AND #$F0
+.162507	4a		lsr a		            LSR A
+.162508	4a		lsr a		            LSR A
+.162509	4a		lsr a		            LSR A
+.16250a	aa		tax		            TAX
+.16250b	7c 0f 25	jmp ($16250f,x)	            JMP (VGM_COMMAND_TABLE,X)
+.16250e					    VGM_LOOP_DONE
+.16250e	6b		rtl		            RTL
+.16250f					VGM_COMMAND_TABLE
+>16250f	2f 25				            .word <>INVALID_COMMAND ;0
+>162511	2f 25				            .word <>INVALID_COMMAND ;1
+>162513	2f 25				            .word <>INVALID_COMMAND ;2
+>162515	32 25				            .word <>SKIP_BYTE_CMD   ;3 - reserved - not implemented
+>162517	32 25				            .word <>SKIP_BYTE_CMD   ;4 - not implemented
+>162519	c5 27				            .word <>WRITE_YM_CMD    ;5 - YM*
+>16251b	bc 29				            .word <>WAIT_COMMANDS   ;6
+>16251d	0e 2a				            .word <>WAIT_N_1        ;7
+>16251f	1c 2a				            .word <>YM2612_SAMPLE   ;8
+>162521	3f 2a				            .word <>DAC_STREAM      ;9
+>162523	13 26				            .word <>AY8910          ;A - AY8910
+>162525	4b 25				            .word <>SKIP_TWO_BYTES  ;B - not implemented
+>162527	6a 25				            .word <>SKIP_THREE_BYTES;C - not implemented
+>162529	6a 25				            .word <>SKIP_THREE_BYTES;D - not implemented
+>16252b	8f 25				            .word <>SEEK_OFFSET     ;E - not implemented
+>16252d	e8 25				            .word <>SKIP_FOUR_BYTES ;F - not implemented
+.16252f					INVALID_COMMAND
+.16252f	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.162532					SKIP_BYTE_CMD
 .162532	c2 20		rep #$20	                REP #$20        ; set A long
-.162534	e6 84		inc $84		            INC CURRENT_POSITION
-.162536	d0 02		bne $16253a	            BNE increment_done
-.162538	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16253a					    increment_done
-.16253a	e2 20		sep #$20	                SEP #$20        ; set A short
-.16253c	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.16253f					SKIP_TWO_BYTES
-.16253f	c2 20		rep #$20	                REP #$20        ; set A long
-.162541	a9 e1 22	lda #$22e1	            LDA #<>UNK_CMD2_MSG
-.162544	85 7a		sta $7a		            STA MSG_PTR
+.162534	a9 b7 22	lda #$22b7	            LDA #<>UNK_CMD1_MSG
+.162537	85 7a		sta $7a		            STA MSG_PTR
+.162539	e2 20		sep #$20	                SEP #$20        ; set A short
+.16253b	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.16253e	c2 20		rep #$20	                REP #$20        ; set A long
+.162540	e6 84		inc $84		            INC CURRENT_POSITION
+.162542	d0 02		bne $162546	            BNE increment_done
+.162544	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162546					    increment_done
 .162546	e2 20		sep #$20	                SEP #$20        ; set A short
-.162548	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
+.162548	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.16254b					SKIP_TWO_BYTES
 .16254b	c2 20		rep #$20	                REP #$20        ; set A long
-.16254d	e6 84		inc $84		            INC CURRENT_POSITION
-.16254f	d0 02		bne $162553	            BNE s2_1
-.162551	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162553					    s2_1
-.162553	e6 84		inc $84		            INC CURRENT_POSITION
-.162555	d0 02		bne $162559	            BNE s2_2
-.162557	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162559					    s2_2
-.162559	e2 20		sep #$20	                SEP #$20        ; set A short
-.16255b	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.16255e					SKIP_THREE_BYTES
-.16255e	c2 20		rep #$20	                REP #$20        ; set A long
-.162560	a9 f9 22	lda #$22f9	            LDA #<>UNK_CMD3_MSG
-.162563	85 7a		sta $7a		            STA MSG_PTR
+.16254d	a9 cf 22	lda #$22cf	            LDA #<>UNK_CMD2_MSG
+.162550	85 7a		sta $7a		            STA MSG_PTR
+.162552	e2 20		sep #$20	                SEP #$20        ; set A short
+.162554	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.162557	c2 20		rep #$20	                REP #$20        ; set A long
+.162559	e6 84		inc $84		            INC CURRENT_POSITION
+.16255b	d0 02		bne $16255f	            BNE s2_1
+.16255d	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16255f					    s2_1
+.16255f	e6 84		inc $84		            INC CURRENT_POSITION
+.162561	d0 02		bne $162565	            BNE s2_2
+.162563	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162565					    s2_2
 .162565	e2 20		sep #$20	                SEP #$20        ; set A short
-.162567	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
+.162567	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.16256a					SKIP_THREE_BYTES
 .16256a	c2 20		rep #$20	                REP #$20        ; set A long
-.16256c	e6 84		inc $84		            INC CURRENT_POSITION
-.16256e	d0 02		bne $162572	            BNE s3_1
-.162570	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162572					    s3_1
-.162572	e6 84		inc $84		            INC CURRENT_POSITION
-.162574	d0 02		bne $162578	            BNE s3_2
-.162576	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162578					    s3_2
+.16256c	a9 e7 22	lda #$22e7	            LDA #<>UNK_CMD3_MSG
+.16256f	85 7a		sta $7a		            STA MSG_PTR
+.162571	e2 20		sep #$20	                SEP #$20        ; set A short
+.162573	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.162576	c2 20		rep #$20	                REP #$20        ; set A long
 .162578	e6 84		inc $84		            INC CURRENT_POSITION
-.16257a	d0 02		bne $16257e	            BNE s3_3
+.16257a	d0 02		bne $16257e	            BNE s3_1
 .16257c	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16257e					    s3_3
-.16257e	e2 20		sep #$20	                SEP #$20        ; set A short
-.162580	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162583					SEEK_OFFSET
-.162583	a5 7f		lda $7f		            LDA COMMAND
-.162585	c9 e0		cmp #$e0	            CMP #$E0
-.162587	d0 53		bne $1625dc	            BNE SKIP_FOUR_BYTES
-.162589	c2 20		rep #$20	                REP #$20        ; set A long
-.16258b	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.16258d	8d 20 01	sta $0120	            STA ADDER_A
-.162590	c2 20		rep #$20	                REP #$20        ; set A long
-.162592	e6 84		inc $84		            INC CURRENT_POSITION
-.162594	d0 02		bne $162598	            BNE increment_done
-.162596	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162598					    increment_done
-.162598	e2 20		sep #$20	                SEP #$20        ; set A short
-.16259a	c2 20		rep #$20	                REP #$20        ; set A long
-.16259c	e6 84		inc $84		            INC CURRENT_POSITION
-.16259e	d0 02		bne $1625a2	            BNE increment_done
-.1625a0	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1625a2					    increment_done
-.1625a2	e2 20		sep #$20	                SEP #$20        ; set A short
-.1625a4	c2 20		rep #$20	                REP #$20        ; set A long
-.1625a6	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.1625a8	8d 22 01	sta $0122	            STA ADDER_A + 2
-.1625ab	c2 20		rep #$20	                REP #$20        ; set A long
-.1625ad	e6 84		inc $84		            INC CURRENT_POSITION
-.1625af	d0 02		bne $1625b3	            BNE increment_done
-.1625b1	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1625b3					    increment_done
-.1625b3	e2 20		sep #$20	                SEP #$20        ; set A short
-.1625b5	c2 20		rep #$20	                REP #$20        ; set A long
-.1625b7	e6 84		inc $84		            INC CURRENT_POSITION
-.1625b9	d0 02		bne $1625bd	            BNE increment_done
-.1625bb	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1625bd					    increment_done
-.1625bd	e2 20		sep #$20	                SEP #$20        ; set A short
-.1625bf	c2 20		rep #$20	                REP #$20        ; set A long
-.1625c1	ad 00 80	lda $8000	            LDA DATA_STREAM_TBL
-.1625c4	8d 24 01	sta $0124	            STA ADDER_B
-.1625c7	ad 02 80	lda $8002	            LDA DATA_STREAM_TBL + 2
-.1625ca	8d 26 01	sta $0126	            STA ADDER_B + 2
-.1625cd	ad 28 01	lda $0128	            LDA ADDER_R
-.1625d0	85 8a		sta $8a		            STA PCM_OFFSET
-.1625d2	ad 2a 01	lda $012a	            LDA ADDER_R + 2
-.1625d5	85 8c		sta $8c		            STA PCM_OFFSET + 2
-.1625d7	e2 20		sep #$20	                SEP #$20        ; set A short
-.1625d9	4c 02 25	jmp $162502	            JMP VGM_LOOP_DONE
-.1625dc					SKIP_FOUR_BYTES
-.1625dc	c2 20		rep #$20	                REP #$20        ; set A long
-.1625de	a9 11 23	lda #$2311	            LDA #<>UNK_CMD4_MSG
-.1625e1	85 7a		sta $7a		            STA MSG_PTR
+.16257e					    s3_1
+.16257e	e6 84		inc $84		            INC CURRENT_POSITION
+.162580	d0 02		bne $162584	            BNE s3_2
+.162582	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162584					    s3_2
+.162584	e6 84		inc $84		            INC CURRENT_POSITION
+.162586	d0 02		bne $16258a	            BNE s3_3
+.162588	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16258a					    s3_3
+.16258a	e2 20		sep #$20	                SEP #$20        ; set A short
+.16258c	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.16258f					SEEK_OFFSET
+.16258f	a5 7f		lda $7f		            LDA COMMAND
+.162591	c9 e0		cmp #$e0	            CMP #$E0
+.162593	d0 53		bne $1625e8	            BNE SKIP_FOUR_BYTES
+.162595	c2 20		rep #$20	                REP #$20        ; set A long
+.162597	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162599	8d 20 01	sta $0120	            STA ADDER_A
+.16259c	c2 20		rep #$20	                REP #$20        ; set A long
+.16259e	e6 84		inc $84		            INC CURRENT_POSITION
+.1625a0	d0 02		bne $1625a4	            BNE increment_done
+.1625a2	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1625a4					    increment_done
+.1625a4	e2 20		sep #$20	                SEP #$20        ; set A short
+.1625a6	c2 20		rep #$20	                REP #$20        ; set A long
+.1625a8	e6 84		inc $84		            INC CURRENT_POSITION
+.1625aa	d0 02		bne $1625ae	            BNE increment_done
+.1625ac	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1625ae					    increment_done
+.1625ae	e2 20		sep #$20	                SEP #$20        ; set A short
+.1625b0	c2 20		rep #$20	                REP #$20        ; set A long
+.1625b2	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1625b4	8d 22 01	sta $0122	            STA ADDER_A + 2
+.1625b7	c2 20		rep #$20	                REP #$20        ; set A long
+.1625b9	e6 84		inc $84		            INC CURRENT_POSITION
+.1625bb	d0 02		bne $1625bf	            BNE increment_done
+.1625bd	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1625bf					    increment_done
+.1625bf	e2 20		sep #$20	                SEP #$20        ; set A short
+.1625c1	c2 20		rep #$20	                REP #$20        ; set A long
+.1625c3	e6 84		inc $84		            INC CURRENT_POSITION
+.1625c5	d0 02		bne $1625c9	            BNE increment_done
+.1625c7	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1625c9					    increment_done
+.1625c9	e2 20		sep #$20	                SEP #$20        ; set A short
+.1625cb	c2 20		rep #$20	                REP #$20        ; set A long
+.1625cd	ad 00 80	lda $8000	            LDA DATA_STREAM_TBL
+.1625d0	8d 24 01	sta $0124	            STA ADDER_B
+.1625d3	ad 02 80	lda $8002	            LDA DATA_STREAM_TBL + 2
+.1625d6	8d 26 01	sta $0126	            STA ADDER_B + 2
+.1625d9	ad 28 01	lda $0128	            LDA ADDER_R
+.1625dc	85 8a		sta $8a		            STA PCM_OFFSET
+.1625de	ad 2a 01	lda $012a	            LDA ADDER_R + 2
+.1625e1	85 8c		sta $8c		            STA PCM_OFFSET + 2
 .1625e3	e2 20		sep #$20	                SEP #$20        ; set A short
-.1625e5	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
+.1625e5	4c 0e 25	jmp $16250e	            JMP VGM_LOOP_DONE
+.1625e8					SKIP_FOUR_BYTES
 .1625e8	c2 20		rep #$20	                REP #$20        ; set A long
-.1625ea	e6 84		inc $84		            INC CURRENT_POSITION
-.1625ec	d0 02		bne $1625f0	            BNE s4_1
-.1625ee	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1625f0					    s4_1
-.1625f0	e6 84		inc $84		            INC CURRENT_POSITION
-.1625f2	d0 02		bne $1625f6	            BNE s4_2
-.1625f4	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1625f6					    s4_2
+.1625ea	a9 ff 22	lda #$22ff	            LDA #<>UNK_CMD4_MSG
+.1625ed	85 7a		sta $7a		            STA MSG_PTR
+.1625ef	e2 20		sep #$20	                SEP #$20        ; set A short
+.1625f1	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.1625f4	c2 20		rep #$20	                REP #$20        ; set A long
 .1625f6	e6 84		inc $84		            INC CURRENT_POSITION
-.1625f8	d0 02		bne $1625fc	            BNE s4_3
+.1625f8	d0 02		bne $1625fc	            BNE s4_1
 .1625fa	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1625fc					    s4_3
+.1625fc					    s4_1
 .1625fc	e6 84		inc $84		            INC CURRENT_POSITION
-.1625fe	d0 02		bne $162602	            BNE s4_4
+.1625fe	d0 02		bne $162602	            BNE s4_2
 .162600	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162602					    s4_4
-.162602	e2 20		sep #$20	                SEP #$20        ; set A short
-.162604	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162607					AY8910
-.162607	a9 0f		lda #$0f	            LDA #$F
-.162609	85 9a		sta $9a		            STA AY_BASE_AMPL
-.16260b	a5 7f		lda $7f		            LDA COMMAND
-.16260d	c9 a0		cmp #$a0	            CMP #$A0
-.16260f	f0 03		beq $162614	            BEQ AY_COMMAND
-.162611	4c 3f 25	jmp $16253f	            JMP SKIP_TWO_BYTES ; when mixing with the YM2612, the SN76489 is just too load.
-.162614					    AY_COMMAND
-.162614	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162616	c2 20		rep #$20	                REP #$20        ; set A long
-.162618	e6 84		inc $84		            INC CURRENT_POSITION
-.16261a	d0 02		bne $16261e	            BNE increment_done
-.16261c	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16261e					    increment_done
-.16261e	e2 20		sep #$20	                SEP #$20        ; set A short
-.162620	c9 00		cmp #$00	            CMP #0 ; Register 0 fine
-.162622	d0 4c		bne $162670	            BNE AY_R1
-.162624	a5 92		lda $92		            LDA AY_3_8910_A
-.162626	c9 08		cmp #$08	            CMP #8
-.162628	90 19		bcc $162643	            BLT R0_FINE
-.16262a	a9 87		lda #$87	            LDA #$87
-.16262c	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.162630	a9 3f		lda #$3f	            LDA #$3F
-.162632	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.162636	c2 20		rep #$20	                REP #$20        ; set A long
-.162638	e6 84		inc $84		            INC CURRENT_POSITION
-.16263a	d0 02		bne $16263e	            BNE increment_done
-.16263c	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16263e					    increment_done
-.16263e	e2 20		sep #$20	                SEP #$20        ; set A short
-.162640	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162643					        R0_FINE
-.162643	eb		xba		            XBA
-.162644	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162646	c2 20		rep #$20	                REP #$20        ; set A long
-.162648	e6 84		inc $84		            INC CURRENT_POSITION
-.16264a	d0 02		bne $16264e	            BNE increment_done
-.16264c	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16264e					    increment_done
-.16264e	e2 20		sep #$20	                SEP #$20        ; set A short
-.162650	c2 20		rep #$20	                REP #$20        ; set A long
-.162652	4a		lsr a		            LSR A ; drop the LSB
-.162653	e2 20		sep #$20	                SEP #$20        ; set A short
-.162655	48		pha		            PHA
-.162656	29 0f		and #$0f	            AND #$F
-.162658	09 80		ora #$80	            ORA #$80
-.16265a	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.16265e	68		pla		            PLA
-.16265f	c2 20		rep #$20	                REP #$20        ; set A long
-.162661	4a		lsr a		            LSR A
-.162662	4a		lsr a		            LSR A
-.162663	4a		lsr a		            LSR A
-.162664	4a		lsr a		            LSR A
-.162665	e2 20		sep #$20	                SEP #$20        ; set A short
-.162667	29 3f		and #$3f	            AND #$3F ; 6 bits
-.162669	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.16266d	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162670	c9 01		cmp #$01	    AY_R1   CMP #1
-.162672	d0 13		bne $162687	            BNE AY_R2
-.162674	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162676	c2 20		rep #$20	                REP #$20        ; set A long
-.162678	e6 84		inc $84		            INC CURRENT_POSITION
-.16267a	d0 02		bne $16267e	            BNE increment_done
-.16267c	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16267e					    increment_done
-.16267e	e2 20		sep #$20	                SEP #$20        ; set A short
-.162680	29 0f		and #$0f	            AND #$F
-.162682	85 92		sta $92		            STA AY_3_8910_A
-.162684	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162687	c9 02		cmp #$02	    AY_R2   CMP #2
-.162689	d0 4c		bne $1626d7	            BNE AY_R3
-.16268b	a5 94		lda $94		            LDA AY_3_8910_B
-.16268d	c9 08		cmp #$08	            CMP #8
-.16268f	90 19		bcc $1626aa	            BLT R1_FINE
-.162691	a9 a7		lda #$a7	            LDA #$A7
-.162693	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.162697	a9 3f		lda #$3f	            LDA #$3F
-.162699	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.16269d	c2 20		rep #$20	                REP #$20        ; set A long
-.16269f	e6 84		inc $84		            INC CURRENT_POSITION
-.1626a1	d0 02		bne $1626a5	            BNE increment_done
-.1626a3	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1626a5					    increment_done
-.1626a5	e2 20		sep #$20	                SEP #$20        ; set A short
-.1626a7	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.1626aa					        R1_FINE
-.1626aa	eb		xba		            XBA
-.1626ab	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.1626ad	c2 20		rep #$20	                REP #$20        ; set A long
-.1626af	e6 84		inc $84		            INC CURRENT_POSITION
-.1626b1	d0 02		bne $1626b5	            BNE increment_done
-.1626b3	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1626b5					    increment_done
-.1626b5	e2 20		sep #$20	                SEP #$20        ; set A short
-.1626b7	c2 20		rep #$20	                REP #$20        ; set A long
-.1626b9	4a		lsr a		            LSR A ; drop the LSB
-.1626ba	e2 20		sep #$20	                SEP #$20        ; set A short
-.1626bc	48		pha		            PHA
-.1626bd	29 0f		and #$0f	            AND #$F
-.1626bf	09 a0		ora #$a0	            ORA #$A0
-.1626c1	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.1626c5	68		pla		            PLA
-.1626c6	c2 20		rep #$20	                REP #$20        ; set A long
-.1626c8	4a		lsr a		            LSR A
-.1626c9	4a		lsr a		            LSR A
-.1626ca	4a		lsr a		            LSR A
-.1626cb	4a		lsr a		            LSR A
-.1626cc	e2 20		sep #$20	                SEP #$20        ; set A short
-.1626ce	29 3f		and #$3f	            AND #$3F ; 6 bits
-.1626d0	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.1626d4	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.1626d7	c9 03		cmp #$03	    AY_R3   CMP #3
-.1626d9	d0 13		bne $1626ee	            BNE AY_R4
-.1626db	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.1626dd	c2 20		rep #$20	                REP #$20        ; set A long
-.1626df	e6 84		inc $84		            INC CURRENT_POSITION
-.1626e1	d0 02		bne $1626e5	            BNE increment_done
-.1626e3	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1626e5					    increment_done
-.1626e5	e2 20		sep #$20	                SEP #$20        ; set A short
-.1626e7	29 0f		and #$0f	            AND #$F
-.1626e9	85 94		sta $94		            STA AY_3_8910_B
-.1626eb	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.1626ee	c9 04		cmp #$04	    AY_R4   CMP #4
-.1626f0	d0 4c		bne $16273e	            BNE AY_R5
-.1626f2	a5 96		lda $96		            LDA AY_3_8910_C
-.1626f4	c9 08		cmp #$08	            CMP #8
-.1626f6	90 19		bcc $162711	            BLT R2_FINE
-.1626f8	a9 c7		lda #$c7	            LDA #$C7
-.1626fa	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.1626fe	a9 3f		lda #$3f	            LDA #$3F
-.162700	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.162704	c2 20		rep #$20	                REP #$20        ; set A long
-.162706	e6 84		inc $84		            INC CURRENT_POSITION
-.162708	d0 02		bne $16270c	            BNE increment_done
-.16270a	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16270c					    increment_done
-.16270c	e2 20		sep #$20	                SEP #$20        ; set A short
-.16270e	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162711					        R2_FINE
-.162711	eb		xba		            XBA
-.162712	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162714	c2 20		rep #$20	                REP #$20        ; set A long
-.162716	e6 84		inc $84		            INC CURRENT_POSITION
-.162718	d0 02		bne $16271c	            BNE increment_done
-.16271a	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16271c					    increment_done
-.16271c	e2 20		sep #$20	                SEP #$20        ; set A short
-.16271e	c2 20		rep #$20	                REP #$20        ; set A long
-.162720	4a		lsr a		            LSR A ; drop the LSB
-.162721	e2 20		sep #$20	                SEP #$20        ; set A short
-.162723	48		pha		            PHA
-.162724	29 0f		and #$0f	            AND #$F
-.162726	09 c0		ora #$c0	            ORA #$C0
-.162728	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.16272c	68		pla		            PLA
-.16272d	c2 20		rep #$20	                REP #$20        ; set A long
-.16272f	4a		lsr a		            LSR A
-.162730	4a		lsr a		            LSR A
-.162731	4a		lsr a		            LSR A
-.162732	4a		lsr a		            LSR A
-.162733	e2 20		sep #$20	                SEP #$20        ; set A short
-.162735	29 3f		and #$3f	            AND #$3F ; 6 bits
-.162737	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.16273b	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.16273e	c9 05		cmp #$05	    AY_R5   CMP #5
-.162740	d0 13		bne $162755	            BNE AY_R10
-.162742	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162744	c2 20		rep #$20	                REP #$20        ; set A long
-.162746	e6 84		inc $84		            INC CURRENT_POSITION
-.162748	d0 02		bne $16274c	            BNE increment_done
-.16274a	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16274c					    increment_done
-.16274c	e2 20		sep #$20	                SEP #$20        ; set A short
-.16274e	29 0f		and #$0f	            AND #$F
-.162750	85 96		sta $96		            STA AY_3_8910_C
-.162752	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162755					    AY_R10
-.162755	c9 08		cmp #$08	            CMP #8
-.162757	d0 19		bne $162772	            BNE AY_R11
-.162759	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.16275b	c2 20		rep #$20	                REP #$20        ; set A long
-.16275d	e6 84		inc $84		            INC CURRENT_POSITION
-.16275f	d0 02		bne $162763	            BNE increment_done
-.162761	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162763					    increment_done
-.162763	e2 20		sep #$20	                SEP #$20        ; set A short
-.162765	45 9a		eor $9a		            EOR AY_BASE_AMPL
-.162767	29 0f		and #$0f	            AND #$F
-.162769	09 90		ora #$90	            ORA #$90
-.16276b	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.16276f	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162772					    AY_R11
-.162772	c9 09		cmp #$09	            CMP #9
-.162774	d0 19		bne $16278f	            BNE AY_R12
-.162776	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162778	c2 20		rep #$20	                REP #$20        ; set A long
-.16277a	e6 84		inc $84		            INC CURRENT_POSITION
-.16277c	d0 02		bne $162780	            BNE increment_done
-.16277e	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162780					    increment_done
-.162780	e2 20		sep #$20	                SEP #$20        ; set A short
-.162782	45 9a		eor $9a		            EOR AY_BASE_AMPL
-.162784	29 0f		and #$0f	            AND #$F
-.162786	09 b0		ora #$b0	            ORA #$B0
-.162788	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.16278c	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.16278f					    AY_R12
-.16278f	c9 0a		cmp #$0a	            CMP #10
-.162791	d0 19		bne $1627ac	            BNE AY_R15
-.162793	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162795	c2 20		rep #$20	                REP #$20        ; set A long
-.162797	e6 84		inc $84		            INC CURRENT_POSITION
-.162799	d0 02		bne $16279d	            BNE increment_done
-.16279b	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16279d					    increment_done
-.16279d	e2 20		sep #$20	                SEP #$20        ; set A short
-.16279f	45 9a		eor $9a		            EOR AY_BASE_AMPL
-.1627a1	29 0f		and #$0f	            AND #$F
-.1627a3	09 d0		ora #$d0	            ORA #$D0
-.1627a5	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.1627a9	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.1627ac					    AY_R15
-.1627ac	c2 20		rep #$20	                REP #$20        ; set A long
-.1627ae	e6 84		inc $84		            INC CURRENT_POSITION
-.1627b0	d0 02		bne $1627b4	            BNE increment_done
-.1627b2	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1627b4					    increment_done
-.1627b4	e2 20		sep #$20	                SEP #$20        ; set A short
-.1627b6	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.1627b9					WRITE_YM_CMD
-.1627b9	a5 7f		lda $7f		            LDA COMMAND
-.1627bb	c9 50		cmp #$50	            CMP #$50
-.1627bd	d0 13		bne $1627d2	            BNE CHK_YM2413
-.1627bf	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.1627c1	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
-.1627c5	c2 20		rep #$20	                REP #$20        ; set A long
-.1627c7	e6 84		inc $84		            INC CURRENT_POSITION
-.1627c9	d0 02		bne $1627cd	            BNE increment_done
-.1627cb	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1627cd					    increment_done
-.1627cd	e2 20		sep #$20	                SEP #$20        ; set A short
-.1627cf	4c 02 25	jmp $162502	            JMP VGM_LOOP_DONE ; for some reason, this chip needs more time between writes
-.1627d2					        CHK_YM2413
-.1627d2	c9 51		cmp #$51	            CMP #$51
-.1627d4	d0 23		bne $1627f9	            BNE CHK_YM2612_P0
-.1627d6	a9 00		lda #$00	            LDA #0
-.1627d8	eb		xba		            XBA
-.1627d9	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.1627db	aa		tax		            TAX
-.1627dc	c2 20		rep #$20	                REP #$20        ; set A long
-.1627de	e6 84		inc $84		            INC CURRENT_POSITION
-.1627e0	d0 02		bne $1627e4	            BNE increment_done
-.1627e2	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1627e4					    increment_done
-.1627e4	e2 20		sep #$20	                SEP #$20        ; set A short
-.1627e6	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.1627e8	9f 00 e6 af	sta $afe600,x	            STA @lOPL3_BASE_ADRESS,X
-.1627ec	c2 20		rep #$20	                REP #$20        ; set A long
-.1627ee	e6 84		inc $84		            INC CURRENT_POSITION
-.1627f0	d0 02		bne $1627f4	            BNE increment_done
-.1627f2	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1627f4					    increment_done
-.1627f4	e2 20		sep #$20	                SEP #$20        ; set A short
-.1627f6	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.1627f9					        CHK_YM2612_P0
-.1627f9	c9 52		cmp #$52	            CMP #$52
-.1627fb	d0 23		bne $162820	            BNE CHK_YM2612_P1
-.1627fd	a9 00		lda #$00	            LDA #0
-.1627ff	eb		xba		            XBA
-.162800	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162802	aa		tax		            TAX
-.162803	c2 20		rep #$20	                REP #$20        ; set A long
-.162805	e6 84		inc $84		            INC CURRENT_POSITION
-.162807	d0 02		bne $16280b	            BNE increment_done
-.162809	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16280b					    increment_done
-.16280b	e2 20		sep #$20	                SEP #$20        ; set A short
-.16280d	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.16280f	9f 00 f2 af	sta $aff200,x	            STA @lOPN2_BASE_ADDRESS,X
-.162813	c2 20		rep #$20	                REP #$20        ; set A long
-.162815	e6 84		inc $84		            INC CURRENT_POSITION
-.162817	d0 02		bne $16281b	            BNE increment_done
-.162819	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16281b					    increment_done
-.16281b	e2 20		sep #$20	                SEP #$20        ; set A short
-.16281d	4c 02 25	jmp $162502	            JMP VGM_LOOP_DONE ; for some reason, this chip needs more time between writes
-.162820					        CHK_YM2612_P1
-.162820	c9 53		cmp #$53	            CMP #$53
-.162822	d0 23		bne $162847	            BNE CHK_YM2151
-.162824	a9 00		lda #$00	            LDA #0
-.162826	eb		xba		            XBA
-.162827	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162829	aa		tax		            TAX
-.16282a	c2 20		rep #$20	                REP #$20        ; set A long
-.16282c	e6 84		inc $84		            INC CURRENT_POSITION
-.16282e	d0 02		bne $162832	            BNE increment_done
-.162830	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162832					    increment_done
-.162832	e2 20		sep #$20	                SEP #$20        ; set A short
-.162834	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162836	9f 00 f3 af	sta $aff300,x	            STA @lOPN2_BASE_ADDRESS + $100,X
-.16283a	c2 20		rep #$20	                REP #$20        ; set A long
-.16283c	e6 84		inc $84		            INC CURRENT_POSITION
-.16283e	d0 02		bne $162842	            BNE increment_done
-.162840	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162842					    increment_done
-.162842	e2 20		sep #$20	                SEP #$20        ; set A short
-.162844	4c 02 25	jmp $162502	            JMP VGM_LOOP_DONE ; for some reason, this chip needs more time between writes
-.162847					        CHK_YM2151
-.162847	c9 54		cmp #$54	            CMP #$54
-.162849	d0 23		bne $16286e	            BNE CHK_YM2203
-.16284b	a9 00		lda #$00	            LDA #0
-.16284d	eb		xba		            XBA
-.16284e	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162850	aa		tax		            TAX
-.162851	c2 20		rep #$20	                REP #$20        ; set A long
-.162853	e6 84		inc $84		            INC CURRENT_POSITION
-.162855	d0 02		bne $162859	            BNE increment_done
-.162857	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162859					    increment_done
-.162859	e2 20		sep #$20	                SEP #$20        ; set A short
-.16285b	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.16285d	9f 00 f0 af	sta $aff000,x	            STA @lOPM_BASE_ADDRESS,X
-.162861	c2 20		rep #$20	                REP #$20        ; set A long
-.162863	e6 84		inc $84		            INC CURRENT_POSITION
-.162865	d0 02		bne $162869	            BNE increment_done
-.162867	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162869					    increment_done
-.162869	e2 20		sep #$20	                SEP #$20        ; set A short
-.16286b	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.16286e					        CHK_YM2203
-.16286e	c9 55		cmp #$55	            CMP #$55
-.162870	d0 1f		bne $162891	            BNE CHK_YM2608_P0
-.162872	a9 00		lda #$00	            LDA #0
-.162874	eb		xba		            XBA
-.162875	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162877	aa		tax		            TAX
-.162878	c2 20		rep #$20	                REP #$20        ; set A long
-.16287a	e6 84		inc $84		            INC CURRENT_POSITION
-.16287c	d0 02		bne $162880	            BNE increment_done
-.16287e	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162880					    increment_done
-.162880	e2 20		sep #$20	                SEP #$20        ; set A short
-.162882	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162602					    s4_2
+.162602	e6 84		inc $84		            INC CURRENT_POSITION
+.162604	d0 02		bne $162608	            BNE s4_3
+.162606	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162608					    s4_3
+.162608	e6 84		inc $84		            INC CURRENT_POSITION
+.16260a	d0 02		bne $16260e	            BNE s4_4
+.16260c	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16260e					    s4_4
+.16260e	e2 20		sep #$20	                SEP #$20        ; set A short
+.162610	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.162613					AY8910
+.162613	a9 0f		lda #$0f	            LDA #$F
+.162615	85 9a		sta $9a		            STA AY_BASE_AMPL
+.162617	a5 7f		lda $7f		            LDA COMMAND
+.162619	c9 a0		cmp #$a0	            CMP #$A0
+.16261b	f0 03		beq $162620	            BEQ AY_COMMAND
+.16261d	4c 4b 25	jmp $16254b	            JMP SKIP_TWO_BYTES ; when mixing with the YM2612, the SN76489 is just too load.
+.162620					    AY_COMMAND
+.162620	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162622	c2 20		rep #$20	                REP #$20        ; set A long
+.162624	e6 84		inc $84		            INC CURRENT_POSITION
+.162626	d0 02		bne $16262a	            BNE increment_done
+.162628	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16262a					    increment_done
+.16262a	e2 20		sep #$20	                SEP #$20        ; set A short
+.16262c	c9 00		cmp #$00	            CMP #0 ; Register 0 fine
+.16262e	d0 4c		bne $16267c	            BNE AY_R1
+.162630	a5 92		lda $92		            LDA AY_3_8910_A
+.162632	c9 08		cmp #$08	            CMP #8
+.162634	90 19		bcc $16264f	            BLT R0_FINE
+.162636	a9 87		lda #$87	            LDA #$87
+.162638	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.16263c	a9 3f		lda #$3f	            LDA #$3F
+.16263e	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.162642	c2 20		rep #$20	                REP #$20        ; set A long
+.162644	e6 84		inc $84		            INC CURRENT_POSITION
+.162646	d0 02		bne $16264a	            BNE increment_done
+.162648	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16264a					    increment_done
+.16264a	e2 20		sep #$20	                SEP #$20        ; set A short
+.16264c	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.16264f					        R0_FINE
+.16264f	eb		xba		            XBA
+.162650	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162652	c2 20		rep #$20	                REP #$20        ; set A long
+.162654	e6 84		inc $84		            INC CURRENT_POSITION
+.162656	d0 02		bne $16265a	            BNE increment_done
+.162658	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16265a					    increment_done
+.16265a	e2 20		sep #$20	                SEP #$20        ; set A short
+.16265c	c2 20		rep #$20	                REP #$20        ; set A long
+.16265e	4a		lsr a		            LSR A ; drop the LSB
+.16265f	e2 20		sep #$20	                SEP #$20        ; set A short
+.162661	48		pha		            PHA
+.162662	29 0f		and #$0f	            AND #$F
+.162664	09 80		ora #$80	            ORA #$80
+.162666	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.16266a	68		pla		            PLA
+.16266b	c2 20		rep #$20	                REP #$20        ; set A long
+.16266d	4a		lsr a		            LSR A
+.16266e	4a		lsr a		            LSR A
+.16266f	4a		lsr a		            LSR A
+.162670	4a		lsr a		            LSR A
+.162671	e2 20		sep #$20	                SEP #$20        ; set A short
+.162673	29 3f		and #$3f	            AND #$3F ; 6 bits
+.162675	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.162679	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.16267c	c9 01		cmp #$01	    AY_R1   CMP #1
+.16267e	d0 13		bne $162693	            BNE AY_R2
+.162680	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162682	c2 20		rep #$20	                REP #$20        ; set A long
+.162684	e6 84		inc $84		            INC CURRENT_POSITION
+.162686	d0 02		bne $16268a	            BNE increment_done
+.162688	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16268a					    increment_done
+.16268a	e2 20		sep #$20	                SEP #$20        ; set A short
+.16268c	29 0f		and #$0f	            AND #$F
+.16268e	85 92		sta $92		            STA AY_3_8910_A
+.162690	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.162693	c9 02		cmp #$02	    AY_R2   CMP #2
+.162695	d0 4c		bne $1626e3	            BNE AY_R3
+.162697	a5 94		lda $94		            LDA AY_3_8910_B
+.162699	c9 08		cmp #$08	            CMP #8
+.16269b	90 19		bcc $1626b6	            BLT R1_FINE
+.16269d	a9 a7		lda #$a7	            LDA #$A7
+.16269f	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.1626a3	a9 3f		lda #$3f	            LDA #$3F
+.1626a5	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.1626a9	c2 20		rep #$20	                REP #$20        ; set A long
+.1626ab	e6 84		inc $84		            INC CURRENT_POSITION
+.1626ad	d0 02		bne $1626b1	            BNE increment_done
+.1626af	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1626b1					    increment_done
+.1626b1	e2 20		sep #$20	                SEP #$20        ; set A short
+.1626b3	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.1626b6					        R1_FINE
+.1626b6	eb		xba		            XBA
+.1626b7	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1626b9	c2 20		rep #$20	                REP #$20        ; set A long
+.1626bb	e6 84		inc $84		            INC CURRENT_POSITION
+.1626bd	d0 02		bne $1626c1	            BNE increment_done
+.1626bf	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1626c1					    increment_done
+.1626c1	e2 20		sep #$20	                SEP #$20        ; set A short
+.1626c3	c2 20		rep #$20	                REP #$20        ; set A long
+.1626c5	4a		lsr a		            LSR A ; drop the LSB
+.1626c6	e2 20		sep #$20	                SEP #$20        ; set A short
+.1626c8	48		pha		            PHA
+.1626c9	29 0f		and #$0f	            AND #$F
+.1626cb	09 a0		ora #$a0	            ORA #$A0
+.1626cd	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.1626d1	68		pla		            PLA
+.1626d2	c2 20		rep #$20	                REP #$20        ; set A long
+.1626d4	4a		lsr a		            LSR A
+.1626d5	4a		lsr a		            LSR A
+.1626d6	4a		lsr a		            LSR A
+.1626d7	4a		lsr a		            LSR A
+.1626d8	e2 20		sep #$20	                SEP #$20        ; set A short
+.1626da	29 3f		and #$3f	            AND #$3F ; 6 bits
+.1626dc	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.1626e0	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.1626e3	c9 03		cmp #$03	    AY_R3   CMP #3
+.1626e5	d0 13		bne $1626fa	            BNE AY_R4
+.1626e7	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1626e9	c2 20		rep #$20	                REP #$20        ; set A long
+.1626eb	e6 84		inc $84		            INC CURRENT_POSITION
+.1626ed	d0 02		bne $1626f1	            BNE increment_done
+.1626ef	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1626f1					    increment_done
+.1626f1	e2 20		sep #$20	                SEP #$20        ; set A short
+.1626f3	29 0f		and #$0f	            AND #$F
+.1626f5	85 94		sta $94		            STA AY_3_8910_B
+.1626f7	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.1626fa	c9 04		cmp #$04	    AY_R4   CMP #4
+.1626fc	d0 4c		bne $16274a	            BNE AY_R5
+.1626fe	a5 96		lda $96		            LDA AY_3_8910_C
+.162700	c9 08		cmp #$08	            CMP #8
+.162702	90 19		bcc $16271d	            BLT R2_FINE
+.162704	a9 c7		lda #$c7	            LDA #$C7
+.162706	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.16270a	a9 3f		lda #$3f	            LDA #$3F
+.16270c	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.162710	c2 20		rep #$20	                REP #$20        ; set A long
+.162712	e6 84		inc $84		            INC CURRENT_POSITION
+.162714	d0 02		bne $162718	            BNE increment_done
+.162716	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162718					    increment_done
+.162718	e2 20		sep #$20	                SEP #$20        ; set A short
+.16271a	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.16271d					        R2_FINE
+.16271d	eb		xba		            XBA
+.16271e	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162720	c2 20		rep #$20	                REP #$20        ; set A long
+.162722	e6 84		inc $84		            INC CURRENT_POSITION
+.162724	d0 02		bne $162728	            BNE increment_done
+.162726	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162728					    increment_done
+.162728	e2 20		sep #$20	                SEP #$20        ; set A short
+.16272a	c2 20		rep #$20	                REP #$20        ; set A long
+.16272c	4a		lsr a		            LSR A ; drop the LSB
+.16272d	e2 20		sep #$20	                SEP #$20        ; set A short
+.16272f	48		pha		            PHA
+.162730	29 0f		and #$0f	            AND #$F
+.162732	09 c0		ora #$c0	            ORA #$C0
+.162734	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.162738	68		pla		            PLA
+.162739	c2 20		rep #$20	                REP #$20        ; set A long
+.16273b	4a		lsr a		            LSR A
+.16273c	4a		lsr a		            LSR A
+.16273d	4a		lsr a		            LSR A
+.16273e	4a		lsr a		            LSR A
+.16273f	e2 20		sep #$20	                SEP #$20        ; set A short
+.162741	29 3f		and #$3f	            AND #$3F ; 6 bits
+.162743	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.162747	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.16274a	c9 05		cmp #$05	    AY_R5   CMP #5
+.16274c	d0 13		bne $162761	            BNE AY_R10
+.16274e	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162750	c2 20		rep #$20	                REP #$20        ; set A long
+.162752	e6 84		inc $84		            INC CURRENT_POSITION
+.162754	d0 02		bne $162758	            BNE increment_done
+.162756	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162758					    increment_done
+.162758	e2 20		sep #$20	                SEP #$20        ; set A short
+.16275a	29 0f		and #$0f	            AND #$F
+.16275c	85 96		sta $96		            STA AY_3_8910_C
+.16275e	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.162761					    AY_R10
+.162761	c9 08		cmp #$08	            CMP #8
+.162763	d0 19		bne $16277e	            BNE AY_R11
+.162765	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162767	c2 20		rep #$20	                REP #$20        ; set A long
+.162769	e6 84		inc $84		            INC CURRENT_POSITION
+.16276b	d0 02		bne $16276f	            BNE increment_done
+.16276d	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16276f					    increment_done
+.16276f	e2 20		sep #$20	                SEP #$20        ; set A short
+.162771	45 9a		eor $9a		            EOR AY_BASE_AMPL
+.162773	29 0f		and #$0f	            AND #$F
+.162775	09 90		ora #$90	            ORA #$90
+.162777	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.16277b	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.16277e					    AY_R11
+.16277e	c9 09		cmp #$09	            CMP #9
+.162780	d0 19		bne $16279b	            BNE AY_R12
+.162782	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162784	c2 20		rep #$20	                REP #$20        ; set A long
+.162786	e6 84		inc $84		            INC CURRENT_POSITION
+.162788	d0 02		bne $16278c	            BNE increment_done
+.16278a	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16278c					    increment_done
+.16278c	e2 20		sep #$20	                SEP #$20        ; set A short
+.16278e	45 9a		eor $9a		            EOR AY_BASE_AMPL
+.162790	29 0f		and #$0f	            AND #$F
+.162792	09 b0		ora #$b0	            ORA #$B0
+.162794	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.162798	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.16279b					    AY_R12
+.16279b	c9 0a		cmp #$0a	            CMP #10
+.16279d	d0 19		bne $1627b8	            BNE AY_R15
+.16279f	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1627a1	c2 20		rep #$20	                REP #$20        ; set A long
+.1627a3	e6 84		inc $84		            INC CURRENT_POSITION
+.1627a5	d0 02		bne $1627a9	            BNE increment_done
+.1627a7	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1627a9					    increment_done
+.1627a9	e2 20		sep #$20	                SEP #$20        ; set A short
+.1627ab	45 9a		eor $9a		            EOR AY_BASE_AMPL
+.1627ad	29 0f		and #$0f	            AND #$F
+.1627af	09 d0		ora #$d0	            ORA #$D0
+.1627b1	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.1627b5	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.1627b8					    AY_R15
+.1627b8	c2 20		rep #$20	                REP #$20        ; set A long
+.1627ba	e6 84		inc $84		            INC CURRENT_POSITION
+.1627bc	d0 02		bne $1627c0	            BNE increment_done
+.1627be	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1627c0					    increment_done
+.1627c0	e2 20		sep #$20	                SEP #$20        ; set A short
+.1627c2	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.1627c5					WRITE_YM_CMD
+.1627c5	a5 7f		lda $7f		            LDA COMMAND
+.1627c7	c9 50		cmp #$50	            CMP #$50
+.1627c9	d0 13		bne $1627de	            BNE CHK_YM2413
+.1627cb	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1627cd	8f 00 f1 af	sta $aff100	            STA PSG_BASE_ADDRESS
+.1627d1	c2 20		rep #$20	                REP #$20        ; set A long
+.1627d3	e6 84		inc $84		            INC CURRENT_POSITION
+.1627d5	d0 02		bne $1627d9	            BNE increment_done
+.1627d7	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1627d9					    increment_done
+.1627d9	e2 20		sep #$20	                SEP #$20        ; set A short
+.1627db	4c 0e 25	jmp $16250e	            JMP VGM_LOOP_DONE ; for some reason, this chip needs more time between writes
+.1627de					        CHK_YM2413
+.1627de	c9 51		cmp #$51	            CMP #$51
+.1627e0	d0 23		bne $162805	            BNE CHK_YM2612_P0
+.1627e2	a9 00		lda #$00	            LDA #0
+.1627e4	eb		xba		            XBA
+.1627e5	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1627e7	aa		tax		            TAX
+.1627e8	c2 20		rep #$20	                REP #$20        ; set A long
+.1627ea	e6 84		inc $84		            INC CURRENT_POSITION
+.1627ec	d0 02		bne $1627f0	            BNE increment_done
+.1627ee	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1627f0					    increment_done
+.1627f0	e2 20		sep #$20	                SEP #$20        ; set A short
+.1627f2	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1627f4	9f 00 e6 af	sta $afe600,x	            STA @lOPL3_BASE_ADRESS,X
+.1627f8	c2 20		rep #$20	                REP #$20        ; set A long
+.1627fa	e6 84		inc $84		            INC CURRENT_POSITION
+.1627fc	d0 02		bne $162800	            BNE increment_done
+.1627fe	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162800					    increment_done
+.162800	e2 20		sep #$20	                SEP #$20        ; set A short
+.162802	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.162805					        CHK_YM2612_P0
+.162805	c9 52		cmp #$52	            CMP #$52
+.162807	d0 23		bne $16282c	            BNE CHK_YM2612_P1
+.162809	a9 00		lda #$00	            LDA #0
+.16280b	eb		xba		            XBA
+.16280c	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.16280e	aa		tax		            TAX
+.16280f	c2 20		rep #$20	                REP #$20        ; set A long
+.162811	e6 84		inc $84		            INC CURRENT_POSITION
+.162813	d0 02		bne $162817	            BNE increment_done
+.162815	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162817					    increment_done
+.162817	e2 20		sep #$20	                SEP #$20        ; set A short
+.162819	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.16281b	9f 00 f2 af	sta $aff200,x	            STA @lOPN2_BASE_ADDRESS,X
+.16281f	c2 20		rep #$20	                REP #$20        ; set A long
+.162821	e6 84		inc $84		            INC CURRENT_POSITION
+.162823	d0 02		bne $162827	            BNE increment_done
+.162825	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162827					    increment_done
+.162827	e2 20		sep #$20	                SEP #$20        ; set A short
+.162829	4c 0e 25	jmp $16250e	            JMP VGM_LOOP_DONE ; for some reason, this chip needs more time between writes
+.16282c					        CHK_YM2612_P1
+.16282c	c9 53		cmp #$53	            CMP #$53
+.16282e	d0 23		bne $162853	            BNE CHK_YM2151
+.162830	a9 00		lda #$00	            LDA #0
+.162832	eb		xba		            XBA
+.162833	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162835	aa		tax		            TAX
+.162836	c2 20		rep #$20	                REP #$20        ; set A long
+.162838	e6 84		inc $84		            INC CURRENT_POSITION
+.16283a	d0 02		bne $16283e	            BNE increment_done
+.16283c	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16283e					    increment_done
+.16283e	e2 20		sep #$20	                SEP #$20        ; set A short
+.162840	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162842	9f 00 f3 af	sta $aff300,x	            STA @lOPN2_BASE_ADDRESS + $100,X
+.162846	c2 20		rep #$20	                REP #$20        ; set A long
+.162848	e6 84		inc $84		            INC CURRENT_POSITION
+.16284a	d0 02		bne $16284e	            BNE increment_done
+.16284c	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16284e					    increment_done
+.16284e	e2 20		sep #$20	                SEP #$20        ; set A short
+.162850	4c 0e 25	jmp $16250e	            JMP VGM_LOOP_DONE ; for some reason, this chip needs more time between writes
+.162853					        CHK_YM2151
+.162853	c9 54		cmp #$54	            CMP #$54
+.162855	d0 23		bne $16287a	            BNE CHK_YM2203
+.162857	a9 00		lda #$00	            LDA #0
+.162859	eb		xba		            XBA
+.16285a	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.16285c	aa		tax		            TAX
+.16285d	c2 20		rep #$20	                REP #$20        ; set A long
+.16285f	e6 84		inc $84		            INC CURRENT_POSITION
+.162861	d0 02		bne $162865	            BNE increment_done
+.162863	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162865					    increment_done
+.162865	e2 20		sep #$20	                SEP #$20        ; set A short
+.162867	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162869	9f 00 f0 af	sta $aff000,x	            STA @lOPM_BASE_ADDRESS,X
+.16286d	c2 20		rep #$20	                REP #$20        ; set A long
+.16286f	e6 84		inc $84		            INC CURRENT_POSITION
+.162871	d0 02		bne $162875	            BNE increment_done
+.162873	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162875					    increment_done
+.162875	e2 20		sep #$20	                SEP #$20        ; set A short
+.162877	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.16287a					        CHK_YM2203
+.16287a	c9 55		cmp #$55	            CMP #$55
+.16287c	d0 1f		bne $16289d	            BNE CHK_YM2608_P0
+.16287e	a9 00		lda #$00	            LDA #0
+.162880	eb		xba		            XBA
+.162881	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162883	aa		tax		            TAX
 .162884	c2 20		rep #$20	                REP #$20        ; set A long
 .162886	e6 84		inc $84		            INC CURRENT_POSITION
 .162888	d0 02		bne $16288c	            BNE increment_done
 .16288a	e6 86		inc $86		            INC CURRENT_POSITION + 2
 .16288c					    increment_done
 .16288c	e2 20		sep #$20	                SEP #$20        ; set A short
-.16288e	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162891					        CHK_YM2608_P0
-.162891	c9 56		cmp #$56	            CMP #$56
-.162893	d0 2a		bne $1628bf	            BNE CHK_YM2608_P1
-.162895	a9 00		lda #$00	            LDA #0
-.162897	eb		xba		            XBA
-.162898	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.16289a	c9 10		cmp #$10	            CMP #$10  ; if the register is 0 to $1F, process as SSG
-.16289c	b0 03		bcs $1628a1	            BGE YM2608_FM
-.16289e	4c 07 26	jmp $162607	            JMP AY8910
-.1628a1					        YM2608_FM
-.1628a1	aa		tax		            TAX
-.1628a2	c2 20		rep #$20	                REP #$20        ; set A long
-.1628a4	e6 84		inc $84		            INC CURRENT_POSITION
-.1628a6	d0 02		bne $1628aa	            BNE increment_done
-.1628a8	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1628aa					    increment_done
-.1628aa	e2 20		sep #$20	                SEP #$20        ; set A short
-.1628ac	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.1628ae	9f 00 f2 af	sta $aff200,x	            STA @lOPN2_BASE_ADDRESS,X
-.1628b2	c2 20		rep #$20	                REP #$20        ; set A long
-.1628b4	e6 84		inc $84		            INC CURRENT_POSITION
-.1628b6	d0 02		bne $1628ba	            BNE increment_done
-.1628b8	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1628ba					    increment_done
-.1628ba	e2 20		sep #$20	                SEP #$20        ; set A short
-.1628bc	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.1628bf					        CHK_YM2608_P1
-.1628bf	c9 57		cmp #$57	            CMP #$57
-.1628c1	d0 23		bne $1628e6	            BNE CHK_YM2610_P0
-.1628c3	a9 00		lda #$00	            LDA #0
-.1628c5	eb		xba		            XBA
-.1628c6	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.1628c8	aa		tax		            TAX
-.1628c9	c2 20		rep #$20	                REP #$20        ; set A long
-.1628cb	e6 84		inc $84		            INC CURRENT_POSITION
-.1628cd	d0 02		bne $1628d1	            BNE increment_done
-.1628cf	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1628d1					    increment_done
-.1628d1	e2 20		sep #$20	                SEP #$20        ; set A short
-.1628d3	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.1628d5	9f 00 f2 af	sta $aff200,x	            STA @lOPN2_BASE_ADDRESS,X
-.1628d9	c2 20		rep #$20	                REP #$20        ; set A long
-.1628db	e6 84		inc $84		            INC CURRENT_POSITION
-.1628dd	d0 02		bne $1628e1	            BNE increment_done
-.1628df	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1628e1					    increment_done
-.1628e1	e2 20		sep #$20	                SEP #$20        ; set A short
-.1628e3	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.1628e6					        CHK_YM2610_P0
-.1628e6	c9 58		cmp #$58	            CMP #$58
-.1628e8	d0 2a		bne $162914	            BNE CHK_YM2610_P1
-.1628ea	a9 00		lda #$00	            LDA #0
-.1628ec	eb		xba		            XBA
-.1628ed	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.1628ef	c9 10		cmp #$10	            CMP #$10  ; if the register is 0 to $1F, process as SSG
-.1628f1	b0 03		bcs $1628f6	            BGE YM2610_FM
-.1628f3	4c 07 26	jmp $162607	            JMP AY8910
-.1628f6					        YM2610_FM
-.1628f6	aa		tax		            TAX
-.1628f7	c2 20		rep #$20	                REP #$20        ; set A long
-.1628f9	e6 84		inc $84		            INC CURRENT_POSITION
-.1628fb	d0 02		bne $1628ff	            BNE increment_done
-.1628fd	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1628ff					    increment_done
-.1628ff	e2 20		sep #$20	                SEP #$20        ; set A short
-.162901	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162903	9f 00 f2 af	sta $aff200,x	            STA @lOPN2_BASE_ADDRESS,X
-.162907	c2 20		rep #$20	                REP #$20        ; set A long
-.162909	e6 84		inc $84		            INC CURRENT_POSITION
-.16290b	d0 02		bne $16290f	            BNE increment_done
-.16290d	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16290f					    increment_done
-.16290f	e2 20		sep #$20	                SEP #$20        ; set A short
-.162911	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162914					        CHK_YM2610_P1
-.162914	c9 59		cmp #$59	            CMP #$59
-.162916	d0 23		bne $16293b	            BNE CHK_YM3812
-.162918	a9 00		lda #$00	            LDA #0
-.16291a	eb		xba		            XBA
-.16291b	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.16291d	aa		tax		            TAX
-.16291e	c2 20		rep #$20	                REP #$20        ; set A long
-.162920	e6 84		inc $84		            INC CURRENT_POSITION
-.162922	d0 02		bne $162926	            BNE increment_done
-.162924	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162926					    increment_done
-.162926	e2 20		sep #$20	                SEP #$20        ; set A short
-.162928	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.16292a	9f 00 f3 af	sta $aff300,x	            STA @lOPN2_BASE_ADDRESS + $100,X
-.16292e	c2 20		rep #$20	                REP #$20        ; set A long
-.162930	e6 84		inc $84		            INC CURRENT_POSITION
-.162932	d0 02		bne $162936	            BNE increment_done
-.162934	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162936					    increment_done
-.162936	e2 20		sep #$20	                SEP #$20        ; set A short
-.162938	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.16293b					        CHK_YM3812
-.16293b	c9 5a		cmp #$5a	            CMP #$5A
-.16293d	d0 23		bne $162962	            BNE CHK_YM262_P0
-.16293f	a9 00		lda #$00	            LDA #0
-.162941	eb		xba		            XBA
-.162942	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162944	aa		tax		            TAX
-.162945	c2 20		rep #$20	                REP #$20        ; set A long
-.162947	e6 84		inc $84		            INC CURRENT_POSITION
-.162949	d0 02		bne $16294d	            BNE increment_done
-.16294b	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16294d					    increment_done
-.16294d	e2 20		sep #$20	                SEP #$20        ; set A short
-.16294f	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162951	9f 00 e6 af	sta $afe600,x	            STA @lOPL3_BASE_ADRESS,X
-.162955	c2 20		rep #$20	                REP #$20        ; set A long
-.162957	e6 84		inc $84		            INC CURRENT_POSITION
-.162959	d0 02		bne $16295d	            BNE increment_done
-.16295b	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16295d					    increment_done
-.16295d	e2 20		sep #$20	                SEP #$20        ; set A short
-.16295f	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162962					        CHK_YM262_P0
-.162962	c9 5e		cmp #$5e	            CMP #$5E
-.162964	d0 23		bne $162989	            BNE CHK_YM262_P1
-.162966	a9 00		lda #$00	            LDA #0
-.162968	eb		xba		            XBA
-.162969	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.16296b	aa		tax		            TAX
-.16296c	c2 20		rep #$20	                REP #$20        ; set A long
-.16296e	e6 84		inc $84		            INC CURRENT_POSITION
-.162970	d0 02		bne $162974	            BNE increment_done
-.162972	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162974					    increment_done
-.162974	e2 20		sep #$20	                SEP #$20        ; set A short
-.162976	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162978	9f 00 e6 af	sta $afe600,x	            STA @lOPL3_BASE_ADRESS,X
-.16297c	c2 20		rep #$20	                REP #$20        ; set A long
-.16297e	e6 84		inc $84		            INC CURRENT_POSITION
-.162980	d0 02		bne $162984	            BNE increment_done
-.162982	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162984					    increment_done
-.162984	e2 20		sep #$20	                SEP #$20        ; set A short
-.162986	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162989					        CHK_YM262_P1
-.162989	c9 5f		cmp #$5f	            CMP #$5F
-.16298b	d0 20		bne $1629ad	            BNE YM_DONE
-.16298d	a9 00		lda #$00	            LDA #0
-.16298f	eb		xba		            XBA
-.162990	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162992	aa		tax		            TAX
-.162993	c2 20		rep #$20	                REP #$20        ; set A long
-.162995	e6 84		inc $84		            INC CURRENT_POSITION
-.162997	d0 02		bne $16299b	            BNE increment_done
-.162999	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.16299b					    increment_done
-.16299b	e2 20		sep #$20	                SEP #$20        ; set A short
-.16299d	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.16299f	9f 00 e7 af	sta $afe700,x	            STA @lOPL3_BASE_ADRESS+ $100,X
-.1629a3	c2 20		rep #$20	                REP #$20        ; set A long
-.1629a5	e6 84		inc $84		            INC CURRENT_POSITION
-.1629a7	d0 02		bne $1629ab	            BNE increment_done
-.1629a9	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1629ab					    increment_done
-.1629ab	e2 20		sep #$20	                SEP #$20        ; set A short
-.1629ad					    YM_DONE
-.1629ad	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.1629b0					WAIT_COMMANDS
-.1629b0	a5 7f		lda $7f		            LDA COMMAND
-.1629b2	c9 61		cmp #$61	            CMP #$61
-.1629b4	d0 20		bne $1629d6	            BNE CHK_WAIT_60th
-.1629b6	c2 20		rep #$20	                REP #$20        ; set A long
-.1629b8	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.1629ba	aa		tax		            TAX
-.1629bb	86 88		stx $88		            STX WAIT_CNTR
-.1629bd	e2 20		sep #$20	                SEP #$20        ; set A short
-.1629bf	c2 20		rep #$20	                REP #$20        ; set A long
-.1629c1	e6 84		inc $84		            INC CURRENT_POSITION
-.1629c3	d0 02		bne $1629c7	            BNE increment_done
-.1629c5	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1629c7					    increment_done
-.1629c7	e2 20		sep #$20	                SEP #$20        ; set A short
-.1629c9	c2 20		rep #$20	                REP #$20        ; set A long
-.1629cb	e6 84		inc $84		            INC CURRENT_POSITION
-.1629cd	d0 02		bne $1629d1	            BNE increment_done
-.1629cf	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.1629d1					    increment_done
-.1629d1	e2 20		sep #$20	                SEP #$20        ; set A short
-.1629d3	4c 02 25	jmp $162502	            JMP VGM_LOOP_DONE
-.1629d6					        CHK_WAIT_60th
-.1629d6	c9 62		cmp #$62	            CMP #$62
-.1629d8	d0 08		bne $1629e2	            BNE CHK_WAIT_50th
-.1629da	a2 df 02	ldx #$02df	            LDX #$2df
-.1629dd	86 88		stx $88		            STX WAIT_CNTR
-.1629df	4c 02 25	jmp $162502	            JMP VGM_LOOP_DONE
-.1629e2					        CHK_WAIT_50th
-.1629e2	c9 63		cmp #$63	            CMP #$63
-.1629e4	d0 08		bne $1629ee	            BNE CHK_END_SONG
-.1629e6	a2 72 03	ldx #$0372	            LDX #$372
+.16288e	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162890	c2 20		rep #$20	                REP #$20        ; set A long
+.162892	e6 84		inc $84		            INC CURRENT_POSITION
+.162894	d0 02		bne $162898	            BNE increment_done
+.162896	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162898					    increment_done
+.162898	e2 20		sep #$20	                SEP #$20        ; set A short
+.16289a	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.16289d					        CHK_YM2608_P0
+.16289d	c9 56		cmp #$56	            CMP #$56
+.16289f	d0 2a		bne $1628cb	            BNE CHK_YM2608_P1
+.1628a1	a9 00		lda #$00	            LDA #0
+.1628a3	eb		xba		            XBA
+.1628a4	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1628a6	c9 10		cmp #$10	            CMP #$10  ; if the register is 0 to $1F, process as SSG
+.1628a8	b0 03		bcs $1628ad	            BGE YM2608_FM
+.1628aa	4c 13 26	jmp $162613	            JMP AY8910
+.1628ad					        YM2608_FM
+.1628ad	aa		tax		            TAX
+.1628ae	c2 20		rep #$20	                REP #$20        ; set A long
+.1628b0	e6 84		inc $84		            INC CURRENT_POSITION
+.1628b2	d0 02		bne $1628b6	            BNE increment_done
+.1628b4	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1628b6					    increment_done
+.1628b6	e2 20		sep #$20	                SEP #$20        ; set A short
+.1628b8	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1628ba	9f 00 f2 af	sta $aff200,x	            STA @lOPN2_BASE_ADDRESS,X
+.1628be	c2 20		rep #$20	                REP #$20        ; set A long
+.1628c0	e6 84		inc $84		            INC CURRENT_POSITION
+.1628c2	d0 02		bne $1628c6	            BNE increment_done
+.1628c4	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1628c6					    increment_done
+.1628c6	e2 20		sep #$20	                SEP #$20        ; set A short
+.1628c8	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.1628cb					        CHK_YM2608_P1
+.1628cb	c9 57		cmp #$57	            CMP #$57
+.1628cd	d0 23		bne $1628f2	            BNE CHK_YM2610_P0
+.1628cf	a9 00		lda #$00	            LDA #0
+.1628d1	eb		xba		            XBA
+.1628d2	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1628d4	aa		tax		            TAX
+.1628d5	c2 20		rep #$20	                REP #$20        ; set A long
+.1628d7	e6 84		inc $84		            INC CURRENT_POSITION
+.1628d9	d0 02		bne $1628dd	            BNE increment_done
+.1628db	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1628dd					    increment_done
+.1628dd	e2 20		sep #$20	                SEP #$20        ; set A short
+.1628df	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1628e1	9f 00 f2 af	sta $aff200,x	            STA @lOPN2_BASE_ADDRESS,X
+.1628e5	c2 20		rep #$20	                REP #$20        ; set A long
+.1628e7	e6 84		inc $84		            INC CURRENT_POSITION
+.1628e9	d0 02		bne $1628ed	            BNE increment_done
+.1628eb	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1628ed					    increment_done
+.1628ed	e2 20		sep #$20	                SEP #$20        ; set A short
+.1628ef	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.1628f2					        CHK_YM2610_P0
+.1628f2	c9 58		cmp #$58	            CMP #$58
+.1628f4	d0 2a		bne $162920	            BNE CHK_YM2610_P1
+.1628f6	a9 00		lda #$00	            LDA #0
+.1628f8	eb		xba		            XBA
+.1628f9	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1628fb	c9 10		cmp #$10	            CMP #$10  ; if the register is 0 to $1F, process as SSG
+.1628fd	b0 03		bcs $162902	            BGE YM2610_FM
+.1628ff	4c 13 26	jmp $162613	            JMP AY8910
+.162902					        YM2610_FM
+.162902	aa		tax		            TAX
+.162903	c2 20		rep #$20	                REP #$20        ; set A long
+.162905	e6 84		inc $84		            INC CURRENT_POSITION
+.162907	d0 02		bne $16290b	            BNE increment_done
+.162909	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16290b					    increment_done
+.16290b	e2 20		sep #$20	                SEP #$20        ; set A short
+.16290d	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.16290f	9f 00 f2 af	sta $aff200,x	            STA @lOPN2_BASE_ADDRESS,X
+.162913	c2 20		rep #$20	                REP #$20        ; set A long
+.162915	e6 84		inc $84		            INC CURRENT_POSITION
+.162917	d0 02		bne $16291b	            BNE increment_done
+.162919	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.16291b					    increment_done
+.16291b	e2 20		sep #$20	                SEP #$20        ; set A short
+.16291d	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.162920					        CHK_YM2610_P1
+.162920	c9 59		cmp #$59	            CMP #$59
+.162922	d0 23		bne $162947	            BNE CHK_YM3812
+.162924	a9 00		lda #$00	            LDA #0
+.162926	eb		xba		            XBA
+.162927	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162929	aa		tax		            TAX
+.16292a	c2 20		rep #$20	                REP #$20        ; set A long
+.16292c	e6 84		inc $84		            INC CURRENT_POSITION
+.16292e	d0 02		bne $162932	            BNE increment_done
+.162930	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162932					    increment_done
+.162932	e2 20		sep #$20	                SEP #$20        ; set A short
+.162934	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162936	9f 00 f3 af	sta $aff300,x	            STA @lOPN2_BASE_ADDRESS + $100,X
+.16293a	c2 20		rep #$20	                REP #$20        ; set A long
+.16293c	e6 84		inc $84		            INC CURRENT_POSITION
+.16293e	d0 02		bne $162942	            BNE increment_done
+.162940	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162942					    increment_done
+.162942	e2 20		sep #$20	                SEP #$20        ; set A short
+.162944	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.162947					        CHK_YM3812
+.162947	c9 5a		cmp #$5a	            CMP #$5A
+.162949	d0 23		bne $16296e	            BNE CHK_YM262_P0
+.16294b	a9 00		lda #$00	            LDA #0
+.16294d	eb		xba		            XBA
+.16294e	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162950	aa		tax		            TAX
+.162951	c2 20		rep #$20	                REP #$20        ; set A long
+.162953	e6 84		inc $84		            INC CURRENT_POSITION
+.162955	d0 02		bne $162959	            BNE increment_done
+.162957	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162959					    increment_done
+.162959	e2 20		sep #$20	                SEP #$20        ; set A short
+.16295b	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.16295d	9f 00 e6 af	sta $afe600,x	            STA @lOPL3_BASE_ADRESS,X
+.162961	c2 20		rep #$20	                REP #$20        ; set A long
+.162963	e6 84		inc $84		            INC CURRENT_POSITION
+.162965	d0 02		bne $162969	            BNE increment_done
+.162967	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162969					    increment_done
+.162969	e2 20		sep #$20	                SEP #$20        ; set A short
+.16296b	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.16296e					        CHK_YM262_P0
+.16296e	c9 5e		cmp #$5e	            CMP #$5E
+.162970	d0 23		bne $162995	            BNE CHK_YM262_P1
+.162972	a9 00		lda #$00	            LDA #0
+.162974	eb		xba		            XBA
+.162975	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162977	aa		tax		            TAX
+.162978	c2 20		rep #$20	                REP #$20        ; set A long
+.16297a	e6 84		inc $84		            INC CURRENT_POSITION
+.16297c	d0 02		bne $162980	            BNE increment_done
+.16297e	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162980					    increment_done
+.162980	e2 20		sep #$20	                SEP #$20        ; set A short
+.162982	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162984	9f 00 e6 af	sta $afe600,x	            STA @lOPL3_BASE_ADRESS,X
+.162988	c2 20		rep #$20	                REP #$20        ; set A long
+.16298a	e6 84		inc $84		            INC CURRENT_POSITION
+.16298c	d0 02		bne $162990	            BNE increment_done
+.16298e	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162990					    increment_done
+.162990	e2 20		sep #$20	                SEP #$20        ; set A short
+.162992	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.162995					        CHK_YM262_P1
+.162995	c9 5f		cmp #$5f	            CMP #$5F
+.162997	d0 20		bne $1629b9	            BNE YM_DONE
+.162999	a9 00		lda #$00	            LDA #0
+.16299b	eb		xba		            XBA
+.16299c	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.16299e	aa		tax		            TAX
+.16299f	c2 20		rep #$20	                REP #$20        ; set A long
+.1629a1	e6 84		inc $84		            INC CURRENT_POSITION
+.1629a3	d0 02		bne $1629a7	            BNE increment_done
+.1629a5	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1629a7					    increment_done
+.1629a7	e2 20		sep #$20	                SEP #$20        ; set A short
+.1629a9	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1629ab	9f 00 e7 af	sta $afe700,x	            STA @lOPL3_BASE_ADRESS+ $100,X
+.1629af	c2 20		rep #$20	                REP #$20        ; set A long
+.1629b1	e6 84		inc $84		            INC CURRENT_POSITION
+.1629b3	d0 02		bne $1629b7	            BNE increment_done
+.1629b5	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1629b7					    increment_done
+.1629b7	e2 20		sep #$20	                SEP #$20        ; set A short
+.1629b9					    YM_DONE
+.1629b9	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.1629bc					WAIT_COMMANDS
+.1629bc	a5 7f		lda $7f		            LDA COMMAND
+.1629be	c9 61		cmp #$61	            CMP #$61
+.1629c0	d0 20		bne $1629e2	            BNE CHK_WAIT_60th
+.1629c2	c2 20		rep #$20	                REP #$20        ; set A long
+.1629c4	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.1629c6	aa		tax		            TAX
+.1629c7	86 88		stx $88		            STX WAIT_CNTR
+.1629c9	e2 20		sep #$20	                SEP #$20        ; set A short
+.1629cb	c2 20		rep #$20	                REP #$20        ; set A long
+.1629cd	e6 84		inc $84		            INC CURRENT_POSITION
+.1629cf	d0 02		bne $1629d3	            BNE increment_done
+.1629d1	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1629d3					    increment_done
+.1629d3	e2 20		sep #$20	                SEP #$20        ; set A short
+.1629d5	c2 20		rep #$20	                REP #$20        ; set A long
+.1629d7	e6 84		inc $84		            INC CURRENT_POSITION
+.1629d9	d0 02		bne $1629dd	            BNE increment_done
+.1629db	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.1629dd					    increment_done
+.1629dd	e2 20		sep #$20	                SEP #$20        ; set A short
+.1629df	4c 0e 25	jmp $16250e	            JMP VGM_LOOP_DONE
+.1629e2					        CHK_WAIT_60th
+.1629e2	c9 62		cmp #$62	            CMP #$62
+.1629e4	d0 08		bne $1629ee	            BNE CHK_WAIT_50th
+.1629e6	a2 df 02	ldx #$02df	            LDX #$2df
 .1629e9	86 88		stx $88		            STX WAIT_CNTR
-.1629eb	4c 02 25	jmp $162502	            JMP VGM_LOOP_DONE
-.1629ee					        CHK_END_SONG
-.1629ee	c9 66		cmp #$66	            CMP #$66 ; end of song
-.1629f0	d0 06		bne $1629f8	            BNE CHK_DATA_BLOCK
-.1629f2	20 91 2a	jsr $162a91	            JSR VGM_SET_LOOP_POINTERS
-.1629f5	4c 02 25	jmp $162502	            JMP VGM_LOOP_DONE
-.1629f8					        CHK_DATA_BLOCK
-.1629f8	c9 67		cmp #$67	            CMP #$67
-.1629fa	d0 03		bne $1629ff	            BNE DONE_WAIT
-.1629fc	20 31 2b	jsr $162b31	            JSR READ_DATA_BLOCK
-.1629ff					    DONE_WAIT
-.1629ff	4c 02 25	jmp $162502	            JMP VGM_LOOP_DONE
-.162a02					WAIT_N_1
-.162a02	a9 00		lda #$00	            LDA #0
-.162a04	eb		xba		            XBA
-.162a05	a5 7f		lda $7f		            LDA COMMAND
-.162a07	29 0f		and #$0f	            AND #$F
-.162a09	aa		tax		            TAX
-.162a0a	e8		inx		            INX ; $7n where we wait n+1
-.162a0b	86 88		stx $88		            STX WAIT_CNTR
-.162a0d	4c 02 25	jmp $162502	            JMP VGM_LOOP_DONE
-.162a10					YM2612_SAMPLE
-.162a10	a7 8a		lda [$8a]	            LDA [PCM_OFFSET]
-.162a12	8f 2a f2 af	sta $aff22a	            STA OPN2_BASE_ADDRESS + $2A
-.162a16	c2 20		rep #$20	                REP #$20        ; set A long
-.162a18	a5 8a		lda $8a		            LDA PCM_OFFSET
-.162a1a	1a		inc a		            INC A
-.162a1b	85 8a		sta $8a		            STA PCM_OFFSET
-.162a1d	90 05		bcc $162a24	            BCC YMS_WAIT
-.162a1f	a5 8c		lda $8c		            LDA PCM_OFFSET + 2
-.162a21	1a		inc a		            INC A
-.162a22	85 8c		sta $8c		            STA PCM_OFFSET + 2
-.162a24					    YMS_WAIT
-.162a24	e2 20		sep #$20	                SEP #$20        ; set A short
-.162a26	a9 00		lda #$00	            LDA #0
-.162a28	eb		xba		            XBA
-.162a29	a5 7f		lda $7f		            LDA COMMAND
-.162a2b	29 0f		and #$0f	            AND #$F
-.162a2d	aa		tax		            TAX
-.162a2e	86 88		stx $88		            STX WAIT_CNTR
-.162a30					    YMS_NOT_ZERO
-.162a30	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162a33					DAC_STREAM
-.162a33	4c dd 24	jmp $1624dd	            JMP VGM_WRITE_REGISTER
-.162a36					VGM_SET_SONG_POINTERS
-.162a36	c2 20		rep #$20	                REP #$20        ; set A long
-.162a38	a9 83 22	lda #$2283	            LDA #<>RESET_MSG
-.162a3b	85 7a		sta $7a		            STA MSG_PTR
-.162a3d	e2 20		sep #$20	                SEP #$20        ; set A short
-.162a3f	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
+.1629eb	4c 0e 25	jmp $16250e	            JMP VGM_LOOP_DONE
+.1629ee					        CHK_WAIT_50th
+.1629ee	c9 63		cmp #$63	            CMP #$63
+.1629f0	d0 08		bne $1629fa	            BNE CHK_END_SONG
+.1629f2	a2 72 03	ldx #$0372	            LDX #$372
+.1629f5	86 88		stx $88		            STX WAIT_CNTR
+.1629f7	4c 0e 25	jmp $16250e	            JMP VGM_LOOP_DONE
+.1629fa					        CHK_END_SONG
+.1629fa	c9 66		cmp #$66	            CMP #$66 ; end of song
+.1629fc	d0 06		bne $162a04	            BNE CHK_DATA_BLOCK
+.1629fe	20 9d 2a	jsr $162a9d	            JSR VGM_SET_LOOP_POINTERS
+.162a01	4c 0e 25	jmp $16250e	            JMP VGM_LOOP_DONE
+.162a04					        CHK_DATA_BLOCK
+.162a04	c9 67		cmp #$67	            CMP #$67
+.162a06	d0 03		bne $162a0b	            BNE DONE_WAIT
+.162a08	20 3d 2b	jsr $162b3d	            JSR READ_DATA_BLOCK
+.162a0b					    DONE_WAIT
+.162a0b	4c 0e 25	jmp $16250e	            JMP VGM_LOOP_DONE
+.162a0e					WAIT_N_1
+.162a0e	a9 00		lda #$00	            LDA #0
+.162a10	eb		xba		            XBA
+.162a11	a5 7f		lda $7f		            LDA COMMAND
+.162a13	29 0f		and #$0f	            AND #$F
+.162a15	aa		tax		            TAX
+.162a16	e8		inx		            INX ; $7n where we wait n+1
+.162a17	86 88		stx $88		            STX WAIT_CNTR
+.162a19	4c 0e 25	jmp $16250e	            JMP VGM_LOOP_DONE
+.162a1c					YM2612_SAMPLE
+.162a1c	a7 8a		lda [$8a]	            LDA [PCM_OFFSET]
+.162a1e	8f 2a f2 af	sta $aff22a	            STA OPN2_BASE_ADDRESS + $2A
+.162a22	c2 20		rep #$20	                REP #$20        ; set A long
+.162a24	a5 8a		lda $8a		            LDA PCM_OFFSET
+.162a26	1a		inc a		            INC A
+.162a27	85 8a		sta $8a		            STA PCM_OFFSET
+.162a29	90 05		bcc $162a30	            BCC YMS_WAIT
+.162a2b	a5 8c		lda $8c		            LDA PCM_OFFSET + 2
+.162a2d	1a		inc a		            INC A
+.162a2e	85 8c		sta $8c		            STA PCM_OFFSET + 2
+.162a30					    YMS_WAIT
+.162a30	e2 20		sep #$20	                SEP #$20        ; set A short
+.162a32	a9 00		lda #$00	            LDA #0
+.162a34	eb		xba		            XBA
+.162a35	a5 7f		lda $7f		            LDA COMMAND
+.162a37	29 0f		and #$0f	            AND #$F
+.162a39	aa		tax		            TAX
+.162a3a	86 88		stx $88		            STX WAIT_CNTR
+.162a3c					    YMS_NOT_ZERO
+.162a3c	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.162a3f					DAC_STREAM
+.162a3f	4c e9 24	jmp $1624e9	            JMP VGM_WRITE_REGISTER
+.162a42					VGM_SET_SONG_POINTERS
 .162a42	c2 20		rep #$20	                REP #$20        ; set A long
-.162a44	a9 00 00	lda #$0000	            LDA #0
-.162a47	85 88		sta $88		            STA WAIT_CNTR
-.162a49	a5 82		lda $82		            LDA SONG_START + 2
-.162a4b	85 86		sta $86		            STA CURRENT_POSITION + 2
-.162a4d	e2 20		sep #$20	                SEP #$20        ; set A short
-.162a4f	a5 77		lda $77		            LDA MIN_VERSION
-.162a51	c9 50		cmp #$50	            CMP #$50
-.162a53	90 2b		bcc $162a80	            BLT OLD_VERSION
-.162a55	c2 20		rep #$20	                REP #$20        ; set A long
-.162a57	18		clc		            CLC
-.162a58	a0 34 00	ldy #$0034	            LDY #VGM_OFFSET
-.162a5b	b7 80		lda [$80],y	            LDA [SONG_START],Y
-.162a5d	69 34 00	adc #$0034	            ADC #VGM_OFFSET
-.162a60	65 80		adc $80		            ADC SONG_START
-.162a62	85 84		sta $84		            STA CURRENT_POSITION
-.162a64	90 02		bcc $162a68	            BCC VSP_DONE
-.162a66	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162a68					    VSP_DONE
-.162a68	18		clc		            CLC
-.162a69	a0 14 00	ldy #$0014	            LDY #GD3_OFFSET
-.162a6c	b7 80		lda [$80],y	            LDA [SONG_START],Y
-.162a6e	69 14 00	adc #$0014	            ADC #GD3_OFFSET
-.162a71	65 80		adc $80		            ADC SONG_START
-.162a73	85 8e		sta $8e		            STA GD3_POSITION
-.162a75	c8		iny		            INY
-.162a76	c8		iny		            INY
-.162a77	b7 80		lda [$80],y	            LDA [SONG_START],Y
-.162a79	65 82		adc $82		            ADC SONG_START + 2
-.162a7b	85 90		sta $90		            STA GD3_POSITION + 2
-.162a7d	e2 20		sep #$20	                SEP #$20        ; set A short
-.162a7f	60		rts		            RTS
-.162a80					    OLD_VERSION
-.162a80	c2 20		rep #$20	                REP #$20        ; set A long
-.162a82	18		clc		            CLC
-.162a83	a9 40 00	lda #$0040	            LDA #$40
-.162a86	65 80		adc $80		            ADC SONG_START
-.162a88	85 84		sta $84		            STA CURRENT_POSITION
-.162a8a	90 02		bcc $162a8e	            BCC VSP_OLD_DONE
-.162a8c	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162a8e					    VSP_OLD_DONE
-.162a8e	e2 20		sep #$20	                SEP #$20        ; set A short
-.162a90	60		rts		            RTS
-.162a91					VGM_SET_LOOP_POINTERS
-.162a91	0b		phd		            PHD
-.162a92	8b		phb		            PHB
-.162a93	a9 00		lda #$00	            LDA #0
-.162a95	48		pha		            PHA
-.162a96	ab		plb		            PLB
-.162a97	c2 20		rep #$20	                REP #$20        ; set A long
-.162a99	a9 00 00	lda #$0000	            LDA #0
-.162a9c	5b		tcd		            TCD  ; reset the direct page.
-.162a9d	85 88		sta $88		            STA WAIT_CNTR
-.162a9f	18		clc		            CLC
-.162aa0	a0 1c 00	ldy #$001c	            LDY #LOOP_OFFSET
-.162aa3	b7 80		lda [$80],y	            LDA [SONG_START],Y
-.162aa5	f0 2f		beq $162ad6	            BEQ NO_LOOP_INFO ; if this is zero, assume that the upper word is also 0
-.162aa7	69 1c 00	adc #$001c	            ADC #LOOP_OFFSET ; add the current position
-.162aaa	8d 20 01	sta $0120	            STA ADDER_A
-.162aad	c8		iny		            INY
-.162aae	c8		iny		            INY
+.162a44	a9 71 22	lda #$2271	            LDA #<>RESET_MSG
+.162a47	85 7a		sta $7a		            STA MSG_PTR
+.162a49	e2 20		sep #$20	                SEP #$20        ; set A short
+.162a4b	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.162a4e	c2 20		rep #$20	                REP #$20        ; set A long
+.162a50	a9 00 00	lda #$0000	            LDA #0
+.162a53	85 88		sta $88		            STA WAIT_CNTR
+.162a55	a5 82		lda $82		            LDA SONG_START + 2
+.162a57	85 86		sta $86		            STA CURRENT_POSITION + 2
+.162a59	e2 20		sep #$20	                SEP #$20        ; set A short
+.162a5b	a5 77		lda $77		            LDA MIN_VERSION
+.162a5d	c9 50		cmp #$50	            CMP #$50
+.162a5f	90 2b		bcc $162a8c	            BLT OLD_VERSION
+.162a61	c2 20		rep #$20	                REP #$20        ; set A long
+.162a63	18		clc		            CLC
+.162a64	a0 34 00	ldy #$0034	            LDY #VGM_OFFSET
+.162a67	b7 80		lda [$80],y	            LDA [SONG_START],Y
+.162a69	69 34 00	adc #$0034	            ADC #VGM_OFFSET
+.162a6c	65 80		adc $80		            ADC SONG_START
+.162a6e	85 84		sta $84		            STA CURRENT_POSITION
+.162a70	90 02		bcc $162a74	            BCC VSP_DONE
+.162a72	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162a74					    VSP_DONE
+.162a74	18		clc		            CLC
+.162a75	a0 14 00	ldy #$0014	            LDY #GD3_OFFSET
+.162a78	b7 80		lda [$80],y	            LDA [SONG_START],Y
+.162a7a	69 14 00	adc #$0014	            ADC #GD3_OFFSET
+.162a7d	65 80		adc $80		            ADC SONG_START
+.162a7f	85 8e		sta $8e		            STA GD3_POSITION
+.162a81	c8		iny		            INY
+.162a82	c8		iny		            INY
+.162a83	b7 80		lda [$80],y	            LDA [SONG_START],Y
+.162a85	65 82		adc $82		            ADC SONG_START + 2
+.162a87	85 90		sta $90		            STA GD3_POSITION + 2
+.162a89	e2 20		sep #$20	                SEP #$20        ; set A short
+.162a8b	60		rts		            RTS
+.162a8c					    OLD_VERSION
+.162a8c	c2 20		rep #$20	                REP #$20        ; set A long
+.162a8e	18		clc		            CLC
+.162a8f	a9 40 00	lda #$0040	            LDA #$40
+.162a92	65 80		adc $80		            ADC SONG_START
+.162a94	85 84		sta $84		            STA CURRENT_POSITION
+.162a96	90 02		bcc $162a9a	            BCC VSP_OLD_DONE
+.162a98	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162a9a					    VSP_OLD_DONE
+.162a9a	e2 20		sep #$20	                SEP #$20        ; set A short
+.162a9c	60		rts		            RTS
+.162a9d					VGM_SET_LOOP_POINTERS
+.162a9d	0b		phd		            PHD
+.162a9e	8b		phb		            PHB
+.162a9f	a9 00		lda #$00	            LDA #0
+.162aa1	48		pha		            PHA
+.162aa2	ab		plb		            PLB
+.162aa3	c2 20		rep #$20	                REP #$20        ; set A long
+.162aa5	a9 00 00	lda #$0000	            LDA #0
+.162aa8	5b		tcd		            TCD  ; reset the direct page.
+.162aa9	85 88		sta $88		            STA WAIT_CNTR
+.162aab	18		clc		            CLC
+.162aac	a0 1c 00	ldy #$001c	            LDY #LOOP_OFFSET
 .162aaf	b7 80		lda [$80],y	            LDA [SONG_START],Y
-.162ab1	8d 22 01	sta $0122	            STA ADDER_A + 2
-.162ab4	a9 94 22	lda #$2294	            LDA #<>LOOPING_MSG
-.162ab7	85 7a		sta $7a		            STA MSG_PTR
-.162ab9	e2 20		sep #$20	                SEP #$20        ; set A short
-.162abb	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
-.162abe	c2 20		rep #$20	                REP #$20        ; set A long
-.162ac0	a5 80		lda $80		            LDA SONG_START
-.162ac2	8d 24 01	sta $0124	            STA ADDER_B
-.162ac5	a5 82		lda $82		            LDA SONG_START + 2
-.162ac7	8d 26 01	sta $0126	            STA ADDER_B + 2
-.162aca	ad 28 01	lda $0128	            LDA ADDER_R
-.162acd	85 84		sta $84		            STA CURRENT_POSITION
-.162acf	ad 2a 01	lda $012a	            LDA ADDER_R + 2
-.162ad2	85 86		sta $86		            STA CURRENT_POSITION + 2
-.162ad4	80 20		bra $162af6	            BRA VSL_DONE
-.162ad6					    NO_LOOP_INFO
-.162ad6	a9 83 22	lda #$2283	            LDA #<>RESET_MSG
-.162ad9	85 7a		sta $7a		            STA MSG_PTR
-.162adb	e2 20		sep #$20	                SEP #$20        ; set A short
-.162add	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
-.162ae0	c2 20		rep #$20	                REP #$20        ; set A long
-.162ae2	a0 34 00	ldy #$0034	            LDY #VGM_OFFSET
-.162ae5	b7 80		lda [$80],y	            LDA [SONG_START],Y
-.162ae7	69 34 00	adc #$0034	            ADC #VGM_OFFSET
-.162aea	65 80		adc $80		            ADC SONG_START
-.162aec	85 84		sta $84		            STA CURRENT_POSITION
-.162aee	a5 82		lda $82		            LDA SONG_START + 2
-.162af0	85 86		sta $86		            STA CURRENT_POSITION + 2
-.162af2	90 02		bcc $162af6	            BCC VSL_DONE
-.162af4	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162af6					    VSL_DONE
-.162af6	e2 20		sep #$20	                SEP #$20        ; set A short
-.162af8	ab		plb		            PLB
-.162af9	2b		pld		            PLD
-.162afa	60		rts		            RTS
-.162afb					VGM_INIT_TIMER0
-.162afb	c2 20		rep #$20	                REP #$20        ; set A long
-.162afd	a9 dd 24	lda #$24dd	            LDA #<>VGM_WRITE_REGISTER
-.162b00	8f 3d 11 38	sta $38113d	            STA TIMER0INTSUB + 1
-.162b04	e2 20		sep #$20	                SEP #$20        ; set A short
-.162b06	a9 16		lda #$16	            LDA #`VGM_WRITE_REGISTER
-.162b08	8f 3f 11 38	sta $38113f	            STA TIMER0INTSUB + 3
-.162b0c	a9 10		lda #$10	            LDA #$10
-.162b0e	8d 65 01	sta $0165	            STA TIMER0_CMP_L
-.162b11	a9 01		lda #$01	            LDA #1
-.162b13	8d 66 01	sta $0166	            STA TIMER0_CMP_M
-.162b16	a9 00		lda #$00	            LDA #0
-.162b18	8d 67 01	sta $0167	            STA TIMER0_CMP_H
-.162b1b	a9 00		lda #$00	            LDA #0    ; set timer0 charge to 0
-.162b1d	8d 61 01	sta $0161	            STA TIMER0_CHARGE_L
-.162b20	8d 62 01	sta $0162	            STA TIMER0_CHARGE_M
-.162b23	8d 63 01	sta $0163	            STA TIMER0_CHARGE_H
-.162b26	a9 01		lda #$01	            LDA #TMR0_CMP_RECLR  ; count up from "CHARGE" value to TIMER_CMP
-.162b28	8d 64 01	sta $0164	            STA TIMER0_CMP_REG
-.162b2b	a9 0b		lda #$0b	            LDA #(TMR0_EN | TMR0_UPDWN | TMR0_SCLR)
-.162b2d	8d 60 01	sta $0160	            STA TIMER0_CTRL_REG
-.162b30	60		rts		            RTS
-.162b31					READ_DATA_BLOCK
-.162b31	0b		phd		            PHD
-.162b32	8b		phb		            PHB
-.162b33	a9 00		lda #$00	            LDA #0
-.162b35	48		pha		            PHA
-.162b36	ab		plb		            PLB  ; reset bank
-.162b37	c2 20		rep #$20	                REP #$20        ; set A long
-.162b39	a9 00 00	lda #$0000	            LDA #0
-.162b3c	5b		tcd		            TCD  ; reset direct reg
-.162b3d	a9 a2 22	lda #$22a2	            LDA #<>DATA_BLOCK_MSG
-.162b40	85 7a		sta $7a		            STA MSG_PTR
-.162b42	e2 20		sep #$20	                SEP #$20        ; set A short
-.162b44	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
-.162b47	a7 84		lda [$84]	            LDA [CURRENT_POSITION] ; should be 66
-.162b49	c2 20		rep #$20	                REP #$20        ; set A long
-.162b4b	e6 84		inc $84		            INC CURRENT_POSITION
-.162b4d	d0 02		bne $162b51	            BNE increment_done
-.162b4f	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162b51					    increment_done
-.162b51	e2 20		sep #$20	                SEP #$20        ; set A short
-.162b53	a7 84		lda [$84]	            LDA  [CURRENT_POSITION] ; should be the type - I expect $C0
-.162b55	48		pha		            PHA
-.162b56	c2 20		rep #$20	                REP #$20        ; set A long
-.162b58	e6 84		inc $84		            INC CURRENT_POSITION
-.162b5a	d0 02		bne $162b5e	            BNE increment_done
-.162b5c	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162b5e					    increment_done
-.162b5e	e2 20		sep #$20	                SEP #$20        ; set A short
-.162b60	c2 20		rep #$20	                REP #$20        ; set A long
-.162b62	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162b64	8d 20 01	sta $0120	            STA ADDER_A
-.162b67	c2 20		rep #$20	                REP #$20        ; set A long
-.162b69	e6 84		inc $84		            INC CURRENT_POSITION
-.162b6b	d0 02		bne $162b6f	            BNE increment_done
-.162b6d	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162b6f					    increment_done
-.162b6f	e2 20		sep #$20	                SEP #$20        ; set A short
-.162b71	c2 20		rep #$20	                REP #$20        ; set A long
-.162b73	e6 84		inc $84		            INC CURRENT_POSITION
-.162b75	d0 02		bne $162b79	            BNE increment_done
-.162b77	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162b79					    increment_done
-.162b79	e2 20		sep #$20	                SEP #$20        ; set A short
-.162b7b	c2 20		rep #$20	                REP #$20        ; set A long
-.162b7d	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
-.162b7f	8d 22 01	sta $0122	            STA ADDER_A + 2
-.162b82	c2 20		rep #$20	                REP #$20        ; set A long
-.162b84	e6 84		inc $84		            INC CURRENT_POSITION
-.162b86	d0 02		bne $162b8a	            BNE increment_done
-.162b88	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162b8a					    increment_done
-.162b8a	e2 20		sep #$20	                SEP #$20        ; set A short
-.162b8c	c2 20		rep #$20	                REP #$20        ; set A long
-.162b8e	e6 84		inc $84		            INC CURRENT_POSITION
-.162b90	d0 02		bne $162b94	            BNE increment_done
-.162b92	e6 86		inc $86		            INC CURRENT_POSITION + 2
-.162b94					    increment_done
-.162b94	e2 20		sep #$20	                SEP #$20        ; set A short
-.162b96	c2 20		rep #$20	                REP #$20        ; set A long
-.162b98	a5 84		lda $84		            LDA CURRENT_POSITION
-.162b9a	8d 24 01	sta $0124	            STA ADDER_B
-.162b9d	a5 86		lda $86		            LDA CURRENT_POSITION + 2
-.162b9f	8d 26 01	sta $0126	            STA ADDER_B + 2
-.162ba2	ad 28 01	lda $0128	            LDA ADDER_R
-.162ba5	85 84		sta $84		            STA CURRENT_POSITION
-.162ba7	ad 2a 01	lda $012a	            LDA ADDER_R + 2
-.162baa	85 86		sta $86		            STA CURRENT_POSITION + 2
-.162bac	e2 20		sep #$20	                SEP #$20        ; set A short
-.162bae	68		pla		            PLA
-.162baf	f0 04		beq $162bb5	            BEQ UNCOMPRESSED
-.162bb1	c9 c0		cmp #$c0	            CMP #$C0
-.162bb3	d0 17		bne $162bcc	            BNE UNKNOWN_DATA_BLOCK
-.162bb5					    UNCOMPRESSED
-.162bb5	c2 20		rep #$20	                REP #$20        ; set A long
-.162bb7	a5 7d		lda $7d		            LDA DATA_STREAM_CNT ; multiply by 4
-.162bb9	0a		asl a		            ASL A
-.162bba	0a		asl a		            ASL A
-.162bbb	aa		tax		            TAX
-.162bbc	ad 24 01	lda $0124	            LDA ADDER_B
-.162bbf	9d 00 80	sta $8000,x	            STA DATA_STREAM_TBL,X
-.162bc2	ad 26 01	lda $0126	            LDA ADDER_B + 2
-.162bc5	9d 02 80	sta $8002,x	            STA DATA_STREAM_TBL,X + 2
-.162bc8	e6 7d		inc $7d		            INC DATA_STREAM_CNT
-.162bca	e2 20		sep #$20	                SEP #$20        ; set A short
-.162bcc					    UNKNOWN_DATA_BLOCK
-.162bcc	ab		plb		            PLB
-.162bcd	2b		pld		            PLD
-.162bce	60		rts		            RTS
-.162bcf					VGM_DISPLAY_GD3
-.162bcf	a0 00 00	ldy #$0000	            LDY #0
-.162bd2	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162bd4	c9 47		cmp #$47	            CMP #'G'
-.162bd6	d0 43		bne $162c1b	            BNE GD3_ERROR
-.162bd8	c8		iny		            INY
-.162bd9	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162bdb	c9 64		cmp #$64	            CMP #'d'
-.162bdd	d0 3c		bne $162c1b	            BNE GD3_ERROR
-.162bdf	c8		iny		            INY
-.162be0	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162be2	c9 33		cmp #$33	            CMP #'3'
-.162be4	d0 35		bne $162c1b	            BNE GD3_ERROR
-.162be6	c8		iny		            INY
-.162be7	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162be9	c9 20		cmp #$20	            CMP #' '
-.162beb	d0 2e		bne $162c1b	            BNE GD3_ERROR
-.162bed	c8		iny		            INY
-.162bee	c2 20		rep #$20	                REP #$20        ; set A long
-.162bf0	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162bf2	c9 00 01	cmp #$0100	            CMP #$100
-.162bf5	d0 24		bne $162c1b	            BNE GD3_ERROR
-.162bf7	c8		iny		            INY
-.162bf8	c8		iny		            INY
-.162bf9	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162bfb	d0 1e		bne $162c1b	            BNE GD3_ERROR
-.162bfd	e2 20		sep #$20	                SEP #$20        ; set A short
-.162bff	c8		iny		            INY
-.162c00	c8		iny		            INY
-.162c01	c8		iny		            INY  ; skip the length
-.162c02	c8		iny		            INY
+.162ab1	f0 2f		beq $162ae2	            BEQ NO_LOOP_INFO ; if this is zero, assume that the upper word is also 0
+.162ab3	69 1c 00	adc #$001c	            ADC #LOOP_OFFSET ; add the current position
+.162ab6	8d 20 01	sta $0120	            STA ADDER_A
+.162ab9	c8		iny		            INY
+.162aba	c8		iny		            INY
+.162abb	b7 80		lda [$80],y	            LDA [SONG_START],Y
+.162abd	8d 22 01	sta $0122	            STA ADDER_A + 2
+.162ac0	a9 82 22	lda #$2282	            LDA #<>LOOPING_MSG
+.162ac3	85 7a		sta $7a		            STA MSG_PTR
+.162ac5	e2 20		sep #$20	                SEP #$20        ; set A short
+.162ac7	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.162aca	c2 20		rep #$20	                REP #$20        ; set A long
+.162acc	a5 80		lda $80		            LDA SONG_START
+.162ace	8d 24 01	sta $0124	            STA ADDER_B
+.162ad1	a5 82		lda $82		            LDA SONG_START + 2
+.162ad3	8d 26 01	sta $0126	            STA ADDER_B + 2
+.162ad6	ad 28 01	lda $0128	            LDA ADDER_R
+.162ad9	85 84		sta $84		            STA CURRENT_POSITION
+.162adb	ad 2a 01	lda $012a	            LDA ADDER_R + 2
+.162ade	85 86		sta $86		            STA CURRENT_POSITION + 2
+.162ae0	80 20		bra $162b02	            BRA VSL_DONE
+.162ae2					    NO_LOOP_INFO
+.162ae2	a9 71 22	lda #$2271	            LDA #<>RESET_MSG
+.162ae5	85 7a		sta $7a		            STA MSG_PTR
+.162ae7	e2 20		sep #$20	                SEP #$20        ; set A short
+.162ae9	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.162aec	c2 20		rep #$20	                REP #$20        ; set A long
+.162aee	a0 34 00	ldy #$0034	            LDY #VGM_OFFSET
+.162af1	b7 80		lda [$80],y	            LDA [SONG_START],Y
+.162af3	69 34 00	adc #$0034	            ADC #VGM_OFFSET
+.162af6	65 80		adc $80		            ADC SONG_START
+.162af8	85 84		sta $84		            STA CURRENT_POSITION
+.162afa	a5 82		lda $82		            LDA SONG_START + 2
+.162afc	85 86		sta $86		            STA CURRENT_POSITION + 2
+.162afe	90 02		bcc $162b02	            BCC VSL_DONE
+.162b00	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162b02					    VSL_DONE
+.162b02	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b04	ab		plb		            PLB
+.162b05	2b		pld		            PLD
+.162b06	60		rts		            RTS
+.162b07					VGM_INIT_TIMER0
+.162b07	c2 20		rep #$20	                REP #$20        ; set A long
+.162b09	a9 e9 24	lda #$24e9	            LDA #<>VGM_WRITE_REGISTER
+.162b0c	8f 3d 11 38	sta $38113d	            STA TIMER0INTSUB + 1
+.162b10	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b12	a9 16		lda #$16	            LDA #`VGM_WRITE_REGISTER
+.162b14	8f 3f 11 38	sta $38113f	            STA TIMER0INTSUB + 3
+.162b18	a9 10		lda #$10	            LDA #$10
+.162b1a	8d 65 01	sta $0165	            STA TIMER0_CMP_L
+.162b1d	a9 01		lda #$01	            LDA #1
+.162b1f	8d 66 01	sta $0166	            STA TIMER0_CMP_M
+.162b22	a9 00		lda #$00	            LDA #0
+.162b24	8d 67 01	sta $0167	            STA TIMER0_CMP_H
+.162b27	a9 00		lda #$00	            LDA #0    ; set timer0 charge to 0
+.162b29	8d 61 01	sta $0161	            STA TIMER0_CHARGE_L
+.162b2c	8d 62 01	sta $0162	            STA TIMER0_CHARGE_M
+.162b2f	8d 63 01	sta $0163	            STA TIMER0_CHARGE_H
+.162b32	a9 01		lda #$01	            LDA #TMR0_CMP_RECLR  ; count up from "CHARGE" value to TIMER_CMP
+.162b34	8d 64 01	sta $0164	            STA TIMER0_CMP_REG
+.162b37	a9 0b		lda #$0b	            LDA #(TMR0_EN | TMR0_UPDWN | TMR0_SCLR)
+.162b39	8d 60 01	sta $0160	            STA TIMER0_CTRL_REG
+.162b3c	60		rts		            RTS
+.162b3d					READ_DATA_BLOCK
+.162b3d	0b		phd		            PHD
+.162b3e	8b		phb		            PHB
+.162b3f	a9 00		lda #$00	            LDA #0
+.162b41	48		pha		            PHA
+.162b42	ab		plb		            PLB  ; reset bank
+.162b43	c2 20		rep #$20	                REP #$20        ; set A long
+.162b45	a9 00 00	lda #$0000	            LDA #0
+.162b48	5b		tcd		            TCD  ; reset direct reg
+.162b49	a9 90 22	lda #$2290	            LDA #<>DATA_BLOCK_MSG
+.162b4c	85 7a		sta $7a		            STA MSG_PTR
+.162b4e	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b50	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.162b53	a7 84		lda [$84]	            LDA [CURRENT_POSITION] ; should be 66
+.162b55	c2 20		rep #$20	                REP #$20        ; set A long
+.162b57	e6 84		inc $84		            INC CURRENT_POSITION
+.162b59	d0 02		bne $162b5d	            BNE increment_done
+.162b5b	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162b5d					    increment_done
+.162b5d	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b5f	a7 84		lda [$84]	            LDA  [CURRENT_POSITION] ; should be the type - I expect $C0
+.162b61	48		pha		            PHA
+.162b62	c2 20		rep #$20	                REP #$20        ; set A long
+.162b64	e6 84		inc $84		            INC CURRENT_POSITION
+.162b66	d0 02		bne $162b6a	            BNE increment_done
+.162b68	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162b6a					    increment_done
+.162b6a	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b6c	c2 20		rep #$20	                REP #$20        ; set A long
+.162b6e	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162b70	8d 20 01	sta $0120	            STA ADDER_A
+.162b73	c2 20		rep #$20	                REP #$20        ; set A long
+.162b75	e6 84		inc $84		            INC CURRENT_POSITION
+.162b77	d0 02		bne $162b7b	            BNE increment_done
+.162b79	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162b7b					    increment_done
+.162b7b	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b7d	c2 20		rep #$20	                REP #$20        ; set A long
+.162b7f	e6 84		inc $84		            INC CURRENT_POSITION
+.162b81	d0 02		bne $162b85	            BNE increment_done
+.162b83	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162b85					    increment_done
+.162b85	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b87	c2 20		rep #$20	                REP #$20        ; set A long
+.162b89	a7 84		lda [$84]	            LDA [CURRENT_POSITION]
+.162b8b	8d 22 01	sta $0122	            STA ADDER_A + 2
+.162b8e	c2 20		rep #$20	                REP #$20        ; set A long
+.162b90	e6 84		inc $84		            INC CURRENT_POSITION
+.162b92	d0 02		bne $162b96	            BNE increment_done
+.162b94	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162b96					    increment_done
+.162b96	e2 20		sep #$20	                SEP #$20        ; set A short
+.162b98	c2 20		rep #$20	                REP #$20        ; set A long
+.162b9a	e6 84		inc $84		            INC CURRENT_POSITION
+.162b9c	d0 02		bne $162ba0	            BNE increment_done
+.162b9e	e6 86		inc $86		            INC CURRENT_POSITION + 2
+.162ba0					    increment_done
+.162ba0	e2 20		sep #$20	                SEP #$20        ; set A short
+.162ba2	c2 20		rep #$20	                REP #$20        ; set A long
+.162ba4	a5 84		lda $84		            LDA CURRENT_POSITION
+.162ba6	8d 24 01	sta $0124	            STA ADDER_B
+.162ba9	a5 86		lda $86		            LDA CURRENT_POSITION + 2
+.162bab	8d 26 01	sta $0126	            STA ADDER_B + 2
+.162bae	ad 28 01	lda $0128	            LDA ADDER_R
+.162bb1	85 84		sta $84		            STA CURRENT_POSITION
+.162bb3	ad 2a 01	lda $012a	            LDA ADDER_R + 2
+.162bb6	85 86		sta $86		            STA CURRENT_POSITION + 2
+.162bb8	e2 20		sep #$20	                SEP #$20        ; set A short
+.162bba	68		pla		            PLA
+.162bbb	f0 04		beq $162bc1	            BEQ UNCOMPRESSED
+.162bbd	c9 c0		cmp #$c0	            CMP #$C0
+.162bbf	d0 17		bne $162bd8	            BNE UNKNOWN_DATA_BLOCK
+.162bc1					    UNCOMPRESSED
+.162bc1	c2 20		rep #$20	                REP #$20        ; set A long
+.162bc3	a5 7d		lda $7d		            LDA DATA_STREAM_CNT ; multiply by 4
+.162bc5	0a		asl a		            ASL A
+.162bc6	0a		asl a		            ASL A
+.162bc7	aa		tax		            TAX
+.162bc8	ad 24 01	lda $0124	            LDA ADDER_B
+.162bcb	9d 00 80	sta $8000,x	            STA DATA_STREAM_TBL,X
+.162bce	ad 26 01	lda $0126	            LDA ADDER_B + 2
+.162bd1	9d 02 80	sta $8002,x	            STA DATA_STREAM_TBL,X + 2
+.162bd4	e6 7d		inc $7d		            INC DATA_STREAM_CNT
+.162bd6	e2 20		sep #$20	                SEP #$20        ; set A short
+.162bd8					    UNKNOWN_DATA_BLOCK
+.162bd8	ab		plb		            PLB
+.162bd9	2b		pld		            PLD
+.162bda	60		rts		            RTS
+.162bdb					VGM_DISPLAY_GD3
+.162bdb	a0 00 00	ldy #$0000	            LDY #0
+.162bde	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162be0	c9 47		cmp #$47	            CMP #'G'
+.162be2	d0 43		bne $162c27	            BNE GD3_ERROR
+.162be4	c8		iny		            INY
+.162be5	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162be7	c9 64		cmp #$64	            CMP #'d'
+.162be9	d0 3c		bne $162c27	            BNE GD3_ERROR
+.162beb	c8		iny		            INY
+.162bec	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162bee	c9 33		cmp #$33	            CMP #'3'
+.162bf0	d0 35		bne $162c27	            BNE GD3_ERROR
+.162bf2	c8		iny		            INY
+.162bf3	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162bf5	c9 20		cmp #$20	            CMP #' '
+.162bf7	d0 2e		bne $162c27	            BNE GD3_ERROR
+.162bf9	c8		iny		            INY
+.162bfa	c2 20		rep #$20	                REP #$20        ; set A long
+.162bfc	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162bfe	c9 00 01	cmp #$0100	            CMP #$100
+.162c01	d0 24		bne $162c27	            BNE GD3_ERROR
 .162c03	c8		iny		            INY
 .162c04	c8		iny		            INY
-.162c05	20 26 2c	jsr $162c26	            JSR DISPLAY_MSG_16  ; display the track name in English
-.162c08	20 4f 2c	jsr $162c4f	            JSR DISCARD_16      ; discard the track name in Japanese
-.162c0b	20 4f 2c	jsr $162c4f	            JSR DISCARD_16      ; discard the game name in English
-.162c0e	20 4f 2c	jsr $162c4f	            JSR DISCARD_16      ; discard the game name in Japanese
-.162c11	20 4f 2c	jsr $162c4f	            JSR DISCARD_16      ; discard the system name in English
-.162c14	20 4f 2c	jsr $162c4f	            JSR DISCARD_16      ; discard the system name in Japanese
-.162c17	20 26 2c	jsr $162c26	            JSR DISPLAY_MSG_16  ; display the author's name in English
-.162c1a	60		rts		            RTS
-.162c1b					GD3_ERROR
-.162c1b	e2 20		sep #$20	                SEP #$20        ; set A short
-.162c1d	a2 39 23	ldx #$2339	            LDX #<>GD3_ERR_MSG
-.162c20	86 7a		stx $7a		            STX MSG_PTR
-.162c22	20 6d 24	jsr $16246d	            JSR DISPLAY_MSG
-.162c25	60		rts		            RTS
-.162c26					DISPLAY_MSG_16
-.162c26	a6 78		ldx $78		            LDX DISPLAY_OFFSET
-.162c28					    DM16_LOOP
-.162c28	e2 20		sep #$20	                SEP #$20        ; set A short
-.162c2a	a9 2d		lda #$2d	            LDA #$2D   ; Text color
-.162c2c	9f 00 20 af	sta $af2000,x	            STA $AF2000,X  ; offset to Text LUT $AF:C000
-.162c30	c2 20		rep #$20	                REP #$20        ; set A long
-.162c32	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162c05	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162c07	d0 1e		bne $162c27	            BNE GD3_ERROR
+.162c09	e2 20		sep #$20	                SEP #$20        ; set A short
+.162c0b	c8		iny		            INY
+.162c0c	c8		iny		            INY
+.162c0d	c8		iny		            INY  ; skip the length
+.162c0e	c8		iny		            INY
+.162c0f	c8		iny		            INY
+.162c10	c8		iny		            INY
+.162c11	20 32 2c	jsr $162c32	            JSR DISPLAY_MSG_16  ; display the track name in English
+.162c14	20 5b 2c	jsr $162c5b	            JSR DISCARD_16      ; discard the track name in Japanese
+.162c17	20 5b 2c	jsr $162c5b	            JSR DISCARD_16      ; discard the game name in English
+.162c1a	20 5b 2c	jsr $162c5b	            JSR DISCARD_16      ; discard the game name in Japanese
+.162c1d	20 5b 2c	jsr $162c5b	            JSR DISCARD_16      ; discard the system name in English
+.162c20	20 5b 2c	jsr $162c5b	            JSR DISCARD_16      ; discard the system name in Japanese
+.162c23	20 32 2c	jsr $162c32	            JSR DISPLAY_MSG_16  ; display the author's name in English
+.162c26	60		rts		            RTS
+.162c27					GD3_ERROR
+.162c27	e2 20		sep #$20	                SEP #$20        ; set A short
+.162c29	a2 27 23	ldx #$2327	            LDX #<>GD3_ERR_MSG
+.162c2c	86 7a		stx $7a		            STX MSG_PTR
+.162c2e	20 79 24	jsr $162479	            JSR DISPLAY_MSG
+.162c31	60		rts		            RTS
+.162c32					DISPLAY_MSG_16
+.162c32	a6 78		ldx $78		            LDX DISPLAY_OFFSET
+.162c34					    DM16_LOOP
 .162c34	e2 20		sep #$20	                SEP #$20        ; set A short
-.162c36	9f 00 00 af	sta $af0000,x	            STA $AF0000,X  ; offset to Text LUT $AF:C000
-.162c3a	c8		iny		            INY
-.162c3b	c8		iny		            INY
-.162c3c	e8		inx		            INX
-.162c3d	c2 20		rep #$20	                REP #$20        ; set A long
-.162c3f	c9 00 00	cmp #$0000	            CMP #0
-.162c42	d0 e4		bne $162c28	            BNE DM16_LOOP
-.162c44	a5 78		lda $78		            LDA DISPLAY_OFFSET
-.162c46	18		clc		            CLC
-.162c47	69 50 00	adc #$0050	            ADC #80 ; 80 columns in 640x480 mode
-.162c4a	85 78		sta $78		            STA DISPLAY_OFFSET
-.162c4c	e2 20		sep #$20	                SEP #$20        ; set A short
-.162c4e	60		rts		            RTS
-.162c4f					DISCARD_16
-.162c4f	c2 20		rep #$20	                REP #$20        ; set A long
-.162c51					    DIS_LOOP
-.162c51	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
-.162c53	c8		iny		            INY
-.162c54	c8		iny		            INY
-.162c55	c9 00 00	cmp #$0000	            CMP #0
-.162c58	d0 f7		bne $162c51	            BNE DIS_LOOP
-.162c5a	e2 20		sep #$20	                SEP #$20        ; set A short
-.162c5c	60		rts		            RTS
+.162c36	a9 2d		lda #$2d	            LDA #$2D   ; Text color
+.162c38	9f 00 20 af	sta $af2000,x	            STA $AF2000,X  ; offset to Text LUT $AF:C000
+.162c3c	c2 20		rep #$20	                REP #$20        ; set A long
+.162c3e	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162c40	e2 20		sep #$20	                SEP #$20        ; set A short
+.162c42	9f 00 00 af	sta $af0000,x	            STA $AF0000,X  ; offset to Text LUT $AF:C000
+.162c46	c8		iny		            INY
+.162c47	c8		iny		            INY
+.162c48	e8		inx		            INX
+.162c49	c2 20		rep #$20	                REP #$20        ; set A long
+.162c4b	c9 00 00	cmp #$0000	            CMP #0
+.162c4e	d0 e4		bne $162c34	            BNE DM16_LOOP
+.162c50	a5 78		lda $78		            LDA DISPLAY_OFFSET
+.162c52	18		clc		            CLC
+.162c53	69 50 00	adc #$0050	            ADC #80 ; 80 columns in 640x480 mode
+.162c56	85 78		sta $78		            STA DISPLAY_OFFSET
+.162c58	e2 20		sep #$20	                SEP #$20        ; set A short
+.162c5a	60		rts		            RTS
+.162c5b					DISCARD_16
+.162c5b	c2 20		rep #$20	                REP #$20        ; set A long
+.162c5d					    DIS_LOOP
+.162c5d	b7 8e		lda [$8e],y	            LDA [GD3_POSITION],Y
+.162c5f	c8		iny		            INY
+.162c60	c8		iny		            INY
+.162c61	c9 00 00	cmp #$0000	            CMP #0
+.162c64	d0 f7		bne $162c5d	            BNE DIS_LOOP
+.162c66	e2 20		sep #$20	                SEP #$20        ; set A short
+.162c68	60		rts		            RTS
 
 ;******  End of listing

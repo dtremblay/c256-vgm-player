@@ -78,6 +78,7 @@ VGM_FILE          = $170000  ; the address to store the VGM data.
 VGM_START
             .as
             .xs
+            PHP
             setas
             setxl
             PHB
@@ -129,25 +130,16 @@ VGM_START
             JSR VGM_DISPLAY_GD3
             
             JSR VGM_INIT_TIMER0
-                
-            LDA #$FF
-            STA @lINT_EDGE_REG0
-            STA @lINT_EDGE_REG1
-            STA @lINT_EDGE_REG2
-            STA @lINT_EDGE_REG3
 
-            LDA #~( FNX0_INT02_TMR0 ) ; | FNX0_INT00_SOF) ; uncomment this to debug in the IDE
-            STA @lINT_MASK_REG0
-            LDA #$FF
-            STA @lINT_MASK_REG1
-            STA @lINT_MASK_REG2
-            STA @lINT_MASK_REG3
+            ; enable timer 0
+            LDA INT_MASK_REG0
+            AND #~( FNX0_INT02_TMR0 ) ; | FNX0_INT00_SOF) ; uncomment this to debug in the IDE
+            STA INT_MASK_REG0
             
-            JSR VGM_WRITE_REGISTER  ; the initial load of register should set the timerA
+            JSL VGM_WRITE_REGISTER  ; the initial load of register should set the timerA
             CLI
-            
-            ; return control to the kernel
-            RTL
+
+            BRA VGM_DONE
             
         INVALID_FILE
             setal
@@ -156,8 +148,14 @@ VGM_START
             setas
             JSR DISPLAY_MSG
         VGM_DONE
+            ; return control to the kernel
+            LDY #<>KERNEL_RETURN_MSG
+            STY MSG_PTR
+            JSR DISPLAY_MSG
+            
             PLD
             PLB
+            PLP
             RTL
             
 RESET_MSG               .text 'Restarting song:',0
@@ -172,6 +170,7 @@ HEX_VALUES              .text '0123456789ABCDEF'
 GD3_ERR_MSG             .text 'Couldn''t read Gd3 Info', 0
 LOADING_VGM_FILE_MSG    .text 'VGM Player loading file', 0
 BRUN_CMD_ERROR_MSG      .text 'BRUN does not have a file to load.', 0
+KERNEL_RETURN_MSG       .text 'Returning control to kernel', 0
  
 DOS_REC_PTR      .dstruct FILEDESC
 
@@ -247,7 +246,7 @@ LOAD_VGM_FILE
             RTS
             
     LF_GOOD
-            
+            ; setup the file parameters for the kernel
             setal
             TYA
             CLC
@@ -279,6 +278,8 @@ LOAD_VGM_FILE
             LDA #BIOS_DEV_SD
             STA DOS_REC_PTR.DEV
             JSL F_LOAD
+            BCC LF_ERROR
+            
             setdp 0
             
             RTS
@@ -390,7 +391,7 @@ VGM_WRITE_REGISTER
             JMP (VGM_COMMAND_TABLE,X)
             
     VGM_LOOP_DONE
-            RTS
+            RTL
             
 ; *******************************************************************
 ; * Command Table
