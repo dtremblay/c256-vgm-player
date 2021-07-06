@@ -16,24 +16,21 @@
 ; *   Finally, call VGM_INIT_TIMER0 to initialize TIMER0.
 ; *   Chips supported at this time are:
 ; *     - SN76489 (PSG)
-; *     - YM2612  (OPN2)
-; *     - YM2151  (OPM)
-; *     - YM262   (OPL3)
-; *     - YM3812  (OPL2)
-; ****************************************************************************
-; * This version of the application will be bundled into a PGX file.
-; * The way to use this application is to put it on the SD Card and run:
-; *   BRUN VGMPLAY.PGX "@s:yoursong.vgm"
+; *     - YM2612 (OPN2)
+; *     - YM2151 (OPM)
+; *     - YM262 (OPL3)
+; *     - YM3812 (OPL2)
 ; ****************************************************************************
 .cpu "65816"
 .include "macros_inc.asm"
+.include "base.asm"
 .include "bank_00_inc.asm"
-.include "vicky_ii_def.asm"
+.include "interrupt_def.asm"
+.include "keyboard_def.asm"
+.include "vicky_def.asm"
 .include "kernel_inc.asm"
 .include "timer_def.asm"
 .include "math_def.asm"
-.include "interrupt_def.asm"
-.include "sdos_inc.asm"
 
 OPM_BASE_ADDRESS  = $AFF000
 PSG_BASE_ADDRESS  = $AFF100
@@ -43,7 +40,6 @@ OPL3_BASE_ADRESS  = $AFE600
 ; Important VGM file offsets
 VGM_VERSION       = $8  ; 32-bits
 SN_CLOCK          = $C  ; 32-bits
-GD3_OFFSET        = $14 ; 32-bits
 LOOP_OFFSET       = $1C ; 32-bits
 YM_OFFSET         = $2C ; 32-bits
 OPM_CLOCK         = $30 ; 32-bits
@@ -61,50 +57,27 @@ SONG_START        = $80 ; 4 bytes
 CURRENT_POSITION  = $84 ; 4 bytes
 WAIT_CNTR         = $88 ; 2 bytes
 PCM_OFFSET        = $8A ; 4 bytes
-GD3_POSITION      = $8E ; 4 bytes
 
-AY_3_8910_A       = $92 ; 2 bytes
-AY_3_8910_B       = $94 ; 2 bytes
-AY_3_8910_C       = $96 ; 2 bytes
-AY_3_8910_N       = $98 ; 2 bytes
-AY_BASE_AMPL      = $9A ; 1 byte
+AY_3_8910_A       = $90 ; 2 bytes
+AY_3_8910_B       = $92 ; 2 bytes
+AY_3_8910_C       = $94 ; 2 bytes
+AY_3_8910_N       = $96 ; 2 bytes
+AY_BASE_AMPL      = $98 ; 1 byte
+
+
+
 
 DATA_STREAM_TBL   = $8000 ; each entry is 4 bytes
 
-VGM_FILE          = $170000  ; the address to store the VGM data.
-
-* = $162200
+* = $160000
 
 VGM_START
             .as
             .xs
-            PHP
             setas
             setxl
-            PHB
-            PHD
             
-            SEI
-            setal
-            LDA #0
-            STA WAIT_CNTR
-            setas
-            TCD  ; store 0 in the direct page register
-            PHA
-            PLB  ; store 0 in the bank register
-            
-            STA COMMAND
-            ; set the base address for messages
-            LDA #`RESET_MSG
-            STA MSG_PTR+2
-            ; set the display offset - reuse the kernels start address
-            LDX $17
-            STX DISPLAY_OFFSET
-            
-            ; detect if a file was provided in the BRUN command
-            JSR LOAD_VGM_FILE
-            LDA COMMAND ; if the command is still 0, it's a vgm file
-            BNE VGM_DONE
+            JSL CLRSCREEN
             
             ; disable the cursor
             LDA #0
@@ -113,14 +86,22 @@ VGM_START
             LDX #0
             STX DATA_STREAM_CNT
             
+            LDX #$A000
+            STX DISPLAY_OFFSET
+            
+            LDA #`RESET_MSG
+            STA MSG_PTR+2
+            
             ; load the music
             LDA #`VGM_FILE
             STA CURRENT_POSITION + 2
             STA SONG_START + 2
-
-            LDX #<>VGM_FILE
-            STX SONG_START
+            setal
+            LDA #<>VGM_FILE
+            STA SONG_START
+            setas
             
+            ; first three bytes should be VGM - if not, maybe it's compressed?
             LDA #0
             STA COMMAND
             JSR CHECK_VGM_FILE
@@ -129,19 +110,26 @@ VGM_START
             
             JSR VGM_SET_SONG_POINTERS
             
-            JSR VGM_DISPLAY_GD3
-            
             JSR VGM_INIT_TIMER0
+                
+            LDA #$FF
+            STA @lINT_EDGE_REG0
+            STA @lINT_EDGE_REG1
+            STA @lINT_EDGE_REG2
+            STA @lINT_EDGE_REG3
 
-            ; enable timer 0
-            LDA INT_MASK_REG0
-            AND #~( FNX0_INT02_TMR0 ) ;
-            STA INT_MASK_REG0
+            LDA #~( FNX0_INT02_TMR0 ) ; | FNX0_INT00_SOF) ; uncomment this to debug in the IDE
+            STA @lINT_MASK_REG0
+            LDA #$FF
+            STA @lINT_MASK_REG1
+            STA @lINT_MASK_REG2
+            STA @lINT_MASK_REG3
             
-            JSL VGM_WRITE_REGISTER  ; the initial load of register should set the timerA
+            JSR VGM_WRITE_REGISTER  ; the initial load of register should set the timerA
             CLI
-
-            BRA VGM_DONE
+            ; loop, waiting for interrupts
+        LOOP
+            BRA LOOP
             
         INVALID_FILE
             setal
@@ -149,32 +137,18 @@ VGM_START
             STA MSG_PTR
             setas
             JSR DISPLAY_MSG
-        VGM_DONE
-            ; return control to the kernel
-            LDY #<>KERNEL_RETURN_MSG
-            STY MSG_PTR
-            JSR DISPLAY_MSG
             
-            PLD
-            PLB
-            PLP
-            RTL
+            BRA LOOP
             
-RESET_MSG               .text 'Restarting song:',0
-LOOPING_MSG             .text 'Looping song:',0
-DATA_BLOCK_MSG          .text 'Reading Data Block:',0
-INVALID_FILE_MSG        .text 'Invalid file type:', 0
-UNK_CMD1_MSG            .text 'Unknown 1-Byte Command:',0
-UNK_CMD2_MSG            .text 'Unknown 2-Byte Command:',0
-UNK_CMD3_MSG            .text 'Unknown 3-Byte Command:',0
-UNK_CMD4_MSG            .text 'Unknown 4-Byte Command:',0
-HEX_VALUES              .text '0123456789ABCDEF'
-GD3_ERR_MSG             .text 'Couldn''t read Gd3 Info', 0
-LOADING_VGM_FILE_MSG    .text 'VGM Player loading file', 0
-BRUN_CMD_ERROR_MSG      .text 'BRUN does not have a file to load.', 0
-KERNEL_RETURN_MSG       .text 'Returning control to kernel', 0
- 
-DOS_REC_PTR      .dstruct FILEDESC
+RESET_MSG        .text 'Restarting song:',0
+LOOPING_MSG      .text 'Looping song:',0
+DATA_BLOCK_MSG   .text 'Reading Data Block:',0
+INVALID_FILE_MSG .text 'Invalid file type:', 0
+UNK_CMD1_MSG     .text 'Unknown 1-Byte Command:',0
+UNK_CMD2_MSG     .text 'Unknown 2-Byte Command:',0
+UNK_CMD3_MSG     .text 'Unknown 3-Byte Command:',0
+UNK_CMD4_MSG     .text 'Unknown 4-Byte Command:',0
+HEX_VALUES       .text '0123456789ABCDEF'
 
 ; *******************************************************************
 ; * First three bytes of the file must be VGM
@@ -209,83 +183,6 @@ CHECK_VGM_FILE
             STA COMMAND
             RTS
             
-LOAD_VGM_FILE
-            .as
-            .xl
-            
-            setdp <>DOS_RUN_PARAM
-            .as
-            LDY #0
-            
-    FS_LOOP
-            LDA [DOS_RUN_PARAM],Y
-            INY
-            CPY #$20 ; expect the vgm command to be less than 32 characters
-            BGE LF_ERROR
-            
-            CMP #' '  ; seek the space character in the BRUN command
-            BNE FS_LOOP
-            PHY
-            PHD
-            setdp 0
-            .as
-            ; display a message to the user that we're loading a file
-            LDY #<>LOADING_VGM_FILE_MSG
-            STY MSG_PTR
-            JSR DISPLAY_MSG
-            PLD
-            PLY
-            BRA LF_GOOD
-            
-    LF_ERROR
-            setdp 0
-            .as
-            LDY #<>BRUN_CMD_ERROR_MSG
-            STY MSG_PTR
-            JSR DISPLAY_MSG
-            LDA #1
-            STA COMMAND
-            RTS
-            
-    LF_GOOD
-            ; setup the file parameters for the kernel
-            setal
-            TYA
-            CLC
-            ADC DOS_RUN_PARAM
-            STA DOS_REC_PTR.PATH
-            LDA DOS_RUN_PARAM + 2
-            STA DOS_REC_PTR.PATH + 2
-            LDA #<>VGM_FILE
-            STA DOS_DST_PTR
-            LDA #`VGM_FILE
-            STA DOS_DST_PTR + 2
-            
-            ; write the address of the file descriptor
-            LDA #<>DOS_REC_PTR
-            STA DOS_FD_PTR
-            LDA #`DOS_REC_PTR
-            STA DOS_FD_PTR + 2
-            
-            ; write the address of our buffer
-            LDA #<>VGM_START - 512
-            STA DOS_REC_PTR.BUFFER
-            LDA #`(VGM_START - 512)
-            STA DOS_REC_PTR.BUFFER + 2
-            
-            setas
-
-            LDA #0
-            STA DOS_REC_PTR.STATUS
-            LDA #BIOS_DEV_SD
-            STA DOS_REC_PTR.DEV
-            JSL F_LOAD
-            BCC LF_ERROR
-            
-            setdp 0
-            
-            RTS
-            
 DISPLAY_MSG
             .as
             PHY
@@ -294,10 +191,10 @@ DISPLAY_MSG
             LDA #0
             XBA
     DISPLAY_NEXT
-            LDA #$2D   ; Text color
-            STA $AF2000,X  ; offset to Text LUT $AF:C000
+            LDA #$2D
+            STA $AF2000,X
             LDA [MSG_PTR],Y
-            STA $AF0000,X  ; offset to Text $AF:A000
+            STA $AF0000,X
             ; write the color for the characters - green
             
             INX
@@ -305,7 +202,6 @@ DISPLAY_MSG
             CMP #0
             BNE DISPLAY_NEXT
             
-            ; display the command hex
             LDA #$2D
             STA $AF2000,X
             LDA COMMAND
@@ -333,17 +229,17 @@ DISPLAY_MSG
             setal
             LDA DISPLAY_OFFSET
             CLC
-            ADC #80 ; 80 columns in 640x480 mode
+            ADC #$80
             STA DISPLAY_OFFSET
             setas
             
             XBA
-            CMP #$B1 ; 80 COLS * 56 ROWS = $1180  - SO $11 + A0 = $B1
+            CMP #$BF
             BLT DISPLAY_DONE
             
             XBA
             BNE FIRST_COL
-            LDX #$A000 + 40 ; create a second column
+            LDX #$A020 ; create a second column
             STX DISPLAY_OFFSET
             BRA DISPLAY_DONE
         FIRST_COL
@@ -368,10 +264,7 @@ increment_long_addr .macro
 ; *******************************************************************
 VGM_WRITE_REGISTER
             .as
-            PHD
-            setdp 0
-            .as
-     
+            
             LDX WAIT_CNTR
             CPX #0
             BEQ READ_COMMAND
@@ -379,8 +272,7 @@ VGM_WRITE_REGISTER
             DEX
             STX WAIT_CNTR
             
-            PLD
-            RTL
+            RTS
             
     READ_COMMAND
             LDA #0
@@ -397,8 +289,7 @@ VGM_WRITE_REGISTER
             JMP (VGM_COMMAND_TABLE,X)
             
     VGM_LOOP_DONE
-            PLD
-            RTL
+            RTS
             
 ; *******************************************************************
 ; * Command Table
@@ -423,7 +314,7 @@ VGM_COMMAND_TABLE
             
 INVALID_COMMAND
             .as
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
 
 SKIP_BYTE_CMD
             .as
@@ -433,7 +324,7 @@ SKIP_BYTE_CMD
             setas
             JSR DISPLAY_MSG
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
 
 SKIP_TWO_BYTES
             .as
@@ -452,7 +343,7 @@ SKIP_TWO_BYTES
             INC CURRENT_POSITION + 2
     s2_2
             setas
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
 
 SKIP_THREE_BYTES
             .as
@@ -475,7 +366,7 @@ SKIP_THREE_BYTES
             INC CURRENT_POSITION + 2
     s3_3
             setas
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
 
 SEEK_OFFSET
             .as
@@ -534,7 +425,7 @@ SKIP_FOUR_BYTES
             INC CURRENT_POSITION + 2
     s4_4
             setas
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
 
 ; we need to combine R1 and R0 together before we send
 ; the data to the SN76489
@@ -564,7 +455,7 @@ AY8910
             LDA #$3F
             STA PSG_BASE_ADDRESS
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
         R0_FINE
             XBA
@@ -590,7 +481,7 @@ AY8910
             AND #$3F ; 6 bits
 
             STA PSG_BASE_ADDRESS
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
             
     AY_R1   CMP #1
@@ -601,7 +492,7 @@ AY8910
             AND #$F
             STA AY_3_8910_A
             
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
     AY_R2   CMP #2
             BNE AY_R3
@@ -615,7 +506,7 @@ AY8910
             LDA #$3F
             STA PSG_BASE_ADDRESS
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
         R1_FINE
             XBA
@@ -641,7 +532,7 @@ AY8910
             AND #$3F ; 6 bits
 
             STA PSG_BASE_ADDRESS
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
     AY_R3   CMP #3
             BNE AY_R4
@@ -651,7 +542,7 @@ AY8910
             AND #$F
             STA AY_3_8910_B
             
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
     AY_R4   CMP #4
             BNE AY_R5
@@ -665,7 +556,7 @@ AY8910
             LDA #$3F
             STA PSG_BASE_ADDRESS
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
         R2_FINE
             XBA
@@ -691,7 +582,7 @@ AY8910
             AND #$3F ; 6 bits
 
             STA PSG_BASE_ADDRESS
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
     AY_R5   CMP #5
             BNE AY_R10
@@ -701,7 +592,7 @@ AY8910
             AND #$F
             STA AY_3_8910_C
             
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
     
     AY_R10
             CMP #8
@@ -713,7 +604,7 @@ AY8910
             AND #$F
             ORA #$90
             STA PSG_BASE_ADDRESS
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
     AY_R11
             CMP #9
@@ -725,7 +616,7 @@ AY8910
             AND #$F
             ORA #$B0
             STA PSG_BASE_ADDRESS
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
     AY_R12
             CMP #10
@@ -737,11 +628,11 @@ AY8910
             AND #$F
             ORA #$D0
             STA PSG_BASE_ADDRESS
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
     AY_R15
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
 ; *******************************************************************
 ; * YM Commands
 ; *******************************************************************
@@ -772,7 +663,7 @@ WRITE_YM_CMD
             STA @lOPL3_BASE_ADRESS,X
             ;STA @lOPN2_BASE_ADDRESS,X  ; this probably won't work
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2612_P0
             CMP #$52
@@ -823,7 +714,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPM_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2203
             CMP #$55
@@ -840,7 +731,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             ;STA @lOPM_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2608_P0
             CMP #$56
@@ -862,7 +753,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPN2_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2608_P1
             CMP #$57
@@ -879,7 +770,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPN2_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2610_P0
             CMP #$58
@@ -901,7 +792,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPN2_BASE_ADDRESS,X
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM2610_P1
             CMP #$59
@@ -918,7 +809,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPN2_BASE_ADDRESS + $100,X
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM3812
             CMP #$5A
@@ -935,7 +826,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPL3_BASE_ADRESS,X
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
         
         CHK_YM262_P0
             CMP #$5E
@@ -952,7 +843,7 @@ WRITE_YM_CMD
             LDA [CURRENT_POSITION]
             STA @lOPL3_BASE_ADRESS,X
             increment_long_addr CURRENT_POSITION
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
         CHK_YM262_P1
             CMP #$5F
@@ -970,7 +861,7 @@ WRITE_YM_CMD
             STA @lOPL3_BASE_ADRESS+ $100,X
             increment_long_addr CURRENT_POSITION
     YM_DONE
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
 ; *******************************************************************
 ; * Wait Commands
@@ -1069,7 +960,7 @@ YM2612_SAMPLE
             ;RTS
             
     YMS_NOT_ZERO
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
 ; *******************************************************************
 ; * Don't know yet
@@ -1078,7 +969,7 @@ DAC_STREAM
             .as
 
             ;JMP VGM_LOOP_DONE
-            JMP READ_COMMAND
+            JMP VGM_WRITE_REGISTER
             
 
 VGM_SET_SONG_POINTERS
@@ -1113,20 +1004,6 @@ VGM_SET_SONG_POINTERS
             INC CURRENT_POSITION + 2
     VSP_DONE
             
-            ; compute the GD3 information position
-            CLC
-            LDY #GD3_OFFSET
-            LDA [SONG_START],Y
-            ADC #GD3_OFFSET
-            ADC SONG_START
-            STA GD3_POSITION
-            
-            INY
-            INY
-            LDA [SONG_START],Y
-            ADC SONG_START + 2
-            STA GD3_POSITION + 2
-            
             setas
             RTS
             
@@ -1145,16 +1022,10 @@ VGM_SET_SONG_POINTERS
             
 VGM_SET_LOOP_POINTERS
             .as
-            PHD
-            PHB
-            LDA #0
-            PHA
-            PLB
             
             ; add the start offset
             setal
             LDA #0
-            TCD  ; reset the direct page.
             STA WAIT_CNTR
             
             
@@ -1207,26 +1078,15 @@ VGM_SET_LOOP_POINTERS
             INC CURRENT_POSITION + 2
     VSL_DONE
             setas
-            PLB
-            PLD
+            
             RTS
 
 VGM_INIT_TIMER0
             .as
             
-            ; set the timer 0 interrupt to the VGM_WRITE_REGISTER address
-            setal
-            LDA #<>VGM_WRITE_REGISTER
-            STA VEC_INT02_TMR0 + 1
-            setas
-            
-            ; don't write double-bytes, as it will overwrite the JUMP command
-            LDA #`VGM_WRITE_REGISTER
-            STA VEC_INT02_TMR0 + 3
-            
-            LDA #$60
+            LDA #$30
             STA TIMER0_CMP_L
-            LDA #0
+            LDA #1
             STA TIMER0_CMP_M
             
             LDA #0
@@ -1251,15 +1111,7 @@ VGM_INIT_TIMER0
 ; *******************************************************************************
 READ_DATA_BLOCK
             .as
-            PHD
-            PHB
-            LDA #0
-            PHA
-            PLB  ; reset bank
-            
             setal
-            LDA #0
-            TCD  ; reset direct reg
             LDA #<>DATA_BLOCK_MSG
             STA MSG_PTR
             setas
@@ -1317,105 +1169,64 @@ READ_DATA_BLOCK
             setas
             
     UNKNOWN_DATA_BLOCK
-            PLB
-            PLD
-            RTS
-            
-VGM_DISPLAY_GD3
-            .as
-            ; ensure the Gd3 data is correct, otherwise return
-            LDY #0
-            LDA [GD3_POSITION],Y
-            CMP #'G'
-            BNE GD3_ERROR
-            INY
-            LDA [GD3_POSITION],Y
-            CMP #'d'
-            BNE GD3_ERROR
-            INY
-            LDA [GD3_POSITION],Y
-            CMP #'3'
-            BNE GD3_ERROR
-            INY
-            LDA [GD3_POSITION],Y
-            CMP #' '
-            BNE GD3_ERROR
-            INY
-            setal
-            LDA [GD3_POSITION],Y
-            CMP #$100
-            BNE GD3_ERROR
-            INY
-            INY
-            LDA [GD3_POSITION],Y
-            BNE GD3_ERROR
-    
-            setas
-            INY
-            INY
-            
-            INY  ; skip the length
-            INY
-            INY
-            INY
-            
-            ; header is OK.
-            JSR DISPLAY_MSG_16  ; display the track name in English
-            JSR DISCARD_16      ; discard the track name in Japanese
-            JSR DISCARD_16      ; discard the game name in English
-            JSR DISCARD_16      ; discard the game name in Japanese
-            JSR DISCARD_16      ; discard the system name in English
-            JSR DISCARD_16      ; discard the system name in Japanese
-            JSR DISPLAY_MSG_16  ; display the author's name in English
-            
-            RTS
-            
-GD3_ERROR   
-            setas
-            LDX #<>GD3_ERR_MSG
-            STX MSG_PTR
-            JSR DISPLAY_MSG
             RTS
 
-; read 16 bit character data.  English is still ASCII
-; when a 16-bit 0 is found, return
-; Y countains an offset from GD3_POSITION
-DISPLAY_MSG_16
-            .as
-            LDX DISPLAY_OFFSET
-            
-    DM16_LOOP
-            setas
-            LDA #$2D   ; Text color
-            STA $AF2000,X  ; offset to Text LUT $AF:C000
-            setal
-            LDA [GD3_POSITION],Y
-            
-            setas
-            STA $AF0000,X  ; offset to Text LUT $AF:C000
-            
-            INY
-            INY
-            INX
-            setal
-            CMP #0
-            BNE DM16_LOOP
-            
-            LDA DISPLAY_OFFSET
-            CLC
-            ADC #80 ; 80 columns in 640x480 mode
-            STA DISPLAY_OFFSET
-            setas
-            RTS
-    
-; read all characters until a 16 bit 0 is found
-DISCARD_16
-            setal
-    DIS_LOOP
-            LDA [GD3_POSITION],Y
-            INY
-            INY
-            CMP #0
-            BNE DIS_LOOP
-            setas
-            RTS
+.include "interrupt_handler.asm"
+        
+VGM_FILE
+; converted songs from MIDI to VGM
+;.binary "songs/midi/1943lost.vgm"
+;.binary "songs/midi/STH-Boss_Battle.vgm"
+.binary "songs/midi/Starlightyamaha.vgm"
+
+; YM2151
+;.binary "songs/04 Kalinka.vgm"
+;.binary "songs/peddler.vgm"
+;.binary "songs/05 Troika.vgm"
+;.binary "songs/test.vgm"
+;.binary "songs/02 Strolling Player.vgm"
+
+; PSG FILES
+;.binary "songs/03 Minigame Intro.vgm" ;- this song is so happy!!
+;.binary "songs/01 Ghostbusters Main Theme.vgm"
+
+; YM2612
+;.binary "songs/09 Skyscrapers.vgm"
+;.binary "songs/ym2612-01 Title.vgm"
+;.binary "songs/ym2612-08 Hiromis Theme.vgm"
+
+; YM262
+;.binary "songs/ym262-02 At Doom's Gate.vgm"
+
+; YM3812
+;.binary "songs/lemmings/lemming1.vgm"
+;.binary "songs/lemmings/tim5.vgm"
+
+; YM262 + DAC
+;.binary "songs/02 Character Select.vgm" ; missing DAC stuff
+
+;YM2610 - Foenix play as OPN2
+;.binary "songs/ym2610-SuperDodgeBall-01-Title.vgm" ; - a mix of DAC and YM2612
+;.binary "songs/Dodge-Ball 02 Team Select.vgm" ; for the 2610;
+;.binary "songs/Figth Fever 04 Character Select.vgm" ; - not great - crash at the end
+;.binary "songs/Street Hoop 02 Funky Heat Beach Court.vgm" ; - wait for it
+
+; YM2151
+;.binary "songs/ym2151-05 After Burner-PCM.vgm"
+;.binary "songs/ym2151-34 Endless Love [Link Loop Land].vgm"
+;.binary "songs/Star Trader 03 The Logic of Shooters (Stage 1 Zone Silva).vgm" ; oh this good!! I wish I had the samples.
+
+;YM2608
+;.binary "songs/ym2608-03 I'll Save You All My Justice.vgm"
+;.binary "songs/YM2608-04 Battle Theme 1.vgm"
+;.binary "songs/ym2608-18 Rhythm of Dark [Boss 2].vgm" ; typically, the sounds of the SN76489 overwhelms the YM2612 way too much.
+
+;AY-3-8910
+;.binary "songs/ay-3-8910 Penguin Adventure 03 Forest Path.vgm"
+
+; Sega Genesis
+;.binary "songs/Sonic-20 - Robotnik.vgm"
+;.binary "songs/ym2612-12 - Attack the Barbarian.vgm"
+;.binary "songs/ym2612-13 - Big Boss.vgm"
+;.binary "songs/ym2612-05 - Moon Beach.vgm"
+;.binary "songs/Space Harrier - 03 - Main BGM.vgm"
