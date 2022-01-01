@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.55.2200 listing file
 ; 64tass.exe --long-address -x --intel-hex -o vgm-player.hex --list vgm-player.lst vgm-player.asm
-; Mon Jul 05 23:11:58 2021
+; Sat Jan 01 14:31:18 2022
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -1741,9 +1741,9 @@
 .162b21	e2 20		sep #$20	                SEP #$20        ; set A short
 .162b23	a9 16		lda #$16	            LDA #`VGM_WRITE_REGISTER
 .162b25	8d 0b 17	sta $170b	            STA VEC_INT02_TMR0 + 3
-.162b28	a9 60		lda #$60	            LDA #$60
+.162b28	a9 44		lda #$44	            LDA #$44
 .162b2a	8d 65 01	sta $0165	            STA TIMER0_CMP_L
-.162b2d	a9 00		lda #$00	            LDA #0
+.162b2d	a9 01		lda #$01	            LDA #1
 .162b2f	8d 66 01	sta $0166	            STA TIMER0_CMP_M
 .162b32	a9 00		lda #$00	            LDA #0
 .162b34	8d 67 01	sta $0167	            STA TIMER0_CMP_H

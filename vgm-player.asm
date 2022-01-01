@@ -1224,9 +1224,9 @@ VGM_INIT_TIMER0
             LDA #`VGM_WRITE_REGISTER
             STA VEC_INT02_TMR0 + 3
             
-            LDA #$60
+            LDA #$44
             STA TIMER0_CMP_L
-            LDA #0
+            LDA #1
             STA TIMER0_CMP_M
             
             LDA #0
