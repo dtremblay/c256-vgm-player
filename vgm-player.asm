@@ -1084,11 +1084,10 @@ VGM_SET_LOOP_POINTERS
 VGM_INIT_TIMER0
             .as
             
-            LDA #$30
+            LDA #$44
             STA TIMER0_CMP_L
             LDA #1
             STA TIMER0_CMP_M
-            
             LDA #0
             STA TIMER0_CMP_H
             
@@ -1213,10 +1212,9 @@ VGM_FILE
 
 ;YM2608
 ;.binary "songs/ym2608-03 I'll Save You All My Justice.vgm"
-;.binary "songs/YM2608-04 Battle Theme 1.vgm"
 ;.binary "songs/ym2608-18 Rhythm of Dark [Boss 2].vgm" ; typically, the sounds of the SN76489 overwhelms the YM2612 way too much.
 
-;AY-3-8910
+;AY-3-8910 - the VGM Player for the Foenix FMX emulates this using the SN76489
 ;.binary "songs/ay-3-8910 Penguin Adventure 03 Forest Path.vgm"
 
 ; Sega Genesis
