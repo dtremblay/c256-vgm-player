@@ -34,6 +34,7 @@
 .include "math_def.asm"
 .include "interrupt_def.asm"
 .include "sdos_inc.asm"
+.include "base.asm"
 
 OPM_BASE_ADDRESS  = $AFF000
 PSG_BASE_ADDRESS  = $AFF100
@@ -59,7 +60,7 @@ COMMAND           = $7F ; 1 byte
 
 SONG_START        = $80 ; 4 bytes
 CURRENT_POSITION  = $84 ; 4 bytes
-WAIT_CNTR         = $88 ; 2 bytes
+;WAIT_CNTR         = $88 ; 2 bytes
 PCM_OFFSET        = $8A ; 4 bytes
 GD3_POSITION      = $8E ; 4 bytes
 
@@ -71,7 +72,7 @@ AY_BASE_AMPL      = $9A ; 1 byte
 
 DATA_STREAM_TBL   = $8000 ; each entry is 4 bytes
 
-VGM_FILE          = $170000  ; the address to store the VGM data.
+;VGM_FILE          = $170000  ; the address to store the VGM data.
 
 * = $162200
 
@@ -87,7 +88,7 @@ VGM_START
             SEI
             setal
             LDA #0
-            STA WAIT_CNTR
+            ;STA WAIT_CNTR
             setas
             TCD  ; store 0 in the direct page register
             PHA
@@ -102,9 +103,9 @@ VGM_START
             STX DISPLAY_OFFSET
             
             ; detect if a file was provided in the BRUN command
-            JSR LOAD_VGM_FILE
-            LDA COMMAND ; if the command is still 0, it's a vgm file
-            BNE VGM_DONE
+            ;JSR LOAD_VGM_FILE
+            ;LDA COMMAND ; if the command is still 0, it's a vgm file
+            ;BNE VGM_DONE
             
             ; disable the cursor
             LDA #0
@@ -131,16 +132,18 @@ VGM_START
             
             JSR VGM_DISPLAY_GD3
             
+            JSL VGM_WRITE_REGISTER  ; the initial load of register should set the timerA
+            
             JSR VGM_INIT_TIMER0
-
+            
+            
             ; enable timer 0
             LDA INT_MASK_REG0
             AND #~( FNX0_INT02_TMR0 ) ;
             STA INT_MASK_REG0
             
-            JSL VGM_WRITE_REGISTER  ; the initial load of register should set the timerA
             CLI
-
+        VGM_DONE
             BRA VGM_DONE
             
         INVALID_FILE
@@ -149,7 +152,7 @@ VGM_START
             STA MSG_PTR
             setas
             JSR DISPLAY_MSG
-        VGM_DONE
+        ;VGM_DONE
             ; return control to the kernel
             LDY #<>KERNEL_RETURN_MSG
             STY MSG_PTR
@@ -372,15 +375,15 @@ VGM_WRITE_REGISTER
             setdp 0
             .as
      
-            LDX WAIT_CNTR
-            CPX #0
-            BEQ READ_COMMAND
+            ;LDX WAIT_CNTR
+            ;CPX #0
+            ;BEQ READ_COMMAND
             
-            DEX
-            STX WAIT_CNTR
+            ;DEX
+            ;STX WAIT_CNTR
             
-            PLD
-            RTL
+            ;PLD
+            ;RTL
             
     READ_COMMAND
             LDA #0
@@ -546,7 +549,7 @@ AY8910
             CMP #$A0
             BEQ AY_COMMAND
             
-            JMP SKIP_TWO_BYTES ; when mixing with the YM2612, the SN76489 is just too load.
+            JMP SKIP_TWO_BYTES ; when mixing with the YM2612, the SN76489 is just too loud.
             
     AY_COMMAND
             ; the second byte is the register
@@ -980,29 +983,72 @@ WAIT_COMMANDS
             LDA COMMAND
             CMP #$61
             BNE CHK_WAIT_60th
+            
             setal
+            LDA #$145 ; this assumes a sampling rate of 44kHz - TODO read the sampling rate in the VGM file
+            STA UNSIGNED_MULT_A
+            
             LDA [CURRENT_POSITION]
-            TAX
-            STX WAIT_CNTR
+            STA UNSIGNED_MULT_B
+            
+            CLC
+            LDA UNSIGNED_MULT_RESULT
+            ADC TIMER0_CHARGE_L
+            STA TIMER0_CMP_L
+            ;TAX
+            ;STX WAIT_CNTR
             setas
+            CLC
+            LDA UNSIGNED_MULT_RESULT + 2
+            ADC TIMER0_CHARGE_H
+            STA TIMER0_CMP_H
+            
             increment_long_addr CURRENT_POSITION
             increment_long_addr CURRENT_POSITION
+            
+
             JMP VGM_LOOP_DONE
             
         CHK_WAIT_60th
             CMP #$62
             BNE CHK_WAIT_50th
             
-            LDX #$2df
-            STX WAIT_CNTR
+            ; 1/60th of a second = $3_A51B timer charge
+            setal
+            CLC
+            LDA #$A51B
+            ADC TIMER0_CHARGE_L
+            STA TIMER0_CMP_L
+            setas
+            
+            CLC
+            LDA #3
+            ADC TIMER0_CHARGE_H
+            STA TIMER0_CMP_H
+            ;LDX #$2df
+            ;STX WAIT_CNTR
+
             JMP VGM_LOOP_DONE
             
         CHK_WAIT_50th
             CMP #$63
             BNE CHK_END_SONG
             
-            LDX #$372
-            STX WAIT_CNTR
+            ; 1/50th of a second = $4_5FBA timer charge
+            setal
+            CLC
+            LDA #$5FBA
+            ADC TIMER0_CHARGE_L
+            STA TIMER0_CMP_L
+            setas
+            
+            CLC
+            LDA #4
+            ADC TIMER0_CHARGE_H
+            STA TIMER0_CMP_H
+            ;LDX #$372
+            ;STX WAIT_CNTR
+
             JMP VGM_LOOP_DONE
 
         CHK_END_SONG
@@ -1029,9 +1075,27 @@ WAIT_N_1
             XBA
             LDA COMMAND
             AND #$F
-            TAX
-            INX ; $7n where we wait n+1
-            STX WAIT_CNTR
+            INC A
+    WN_SUB
+            setal
+            STA UNSIGNED_MULT_B
+            
+            LDA #$145 ; this assumes a sampling rate of 44kHz - TODO read the sampling rate in the VGM file
+            STA UNSIGNED_MULT_A
+            
+            CLC
+            LDA UNSIGNED_MULT_RESULT
+            ADC TIMER0_CHARGE_L
+            STA TIMER0_CMP_L
+            ;TAX
+            ;INX ; $7n where we wait n+1
+            ;STX WAIT_CNTR
+            setas
+            CLC
+            LDA UNSIGNED_MULT_RESULT + 2
+            ADC TIMER0_CHARGE_H
+            STA TIMER0_CMP_H
+            
             JMP VGM_LOOP_DONE
             
 ; *******************************************************************
@@ -1061,12 +1125,13 @@ YM2612_SAMPLE
             LDA COMMAND
             ; this is the wait part
             AND #$F
-            TAX
-            STX WAIT_CNTR
-            ;CPX #0
-            ;BNE YMS_NOT_ZERO
+            ;TAX
+            ;STX WAIT_CNTR
+            CMP #0
+            BNE YMS_NOT_ZERO
+            JMP WN_SUB
+            RTS
             
-            ;RTS
             
     YMS_NOT_ZERO
             JMP READ_COMMAND
@@ -1165,8 +1230,8 @@ VGM_SET_SONG_POINTERS
             JSR DISPLAY_MSG
             
             setal
-            LDA #0
-            STA WAIT_CNTR
+            ;LDA #0
+            ;STA WAIT_CNTR
             LDA SONG_START + 2
             STA CURRENT_POSITION + 2
             setas
@@ -1230,7 +1295,7 @@ VGM_SET_LOOP_POINTERS
             setal
             LDA #0
             TCD  ; reset the direct page.
-            STA WAIT_CNTR
+            ;STA WAIT_CNTR
             
             
             CLC
@@ -1299,24 +1364,18 @@ VGM_INIT_TIMER0
             LDA #`VGM_WRITE_REGISTER
             STA VEC_INT02_TMR0 + 3
             
-            LDA #$44
-            STA TIMER0_CMP_L
-            LDA #1
-            STA TIMER0_CMP_M
+            STZ TIMER0_CMP_L
+            STZ TIMER0_CMP_M
+            STZ TIMER0_CMP_H
+
+            STZ TIMER0_CHARGE_L
+            STZ TIMER0_CHARGE_M
+            STZ TIMER0_CHARGE_H
             
-            LDA #0
-            STA TIMER0_CMP_H
-            
-            
-            LDA #0    ; set timer0 charge to 0
-            STA TIMER0_CHARGE_L
-            STA TIMER0_CHARGE_M
-            STA TIMER0_CHARGE_H
-            
-            LDA #TMR0_CMP_RECLR  ; count up from "CHARGE" value to TIMER_CMP
+            LDA #TMR0_CMP_RECLR
             STA TIMER0_CMP_REG
             
-            LDA #(TMR0_EN | TMR0_UPDWN | TMR0_SCLR)
+            LDA #(TMR0_EN | TMR0_UPDWN | TMR0_SCLR)  ; don't automatically reload 
             STA TIMER0_CTRL_REG
 
             RTS
@@ -1494,3 +1553,7 @@ DISCARD_16
             BNE DIS_LOOP
             setas
             RTS
+
+* = $170000
+VGM_FILE
+.binary "songs/ym2612-01 Title.vgm"
